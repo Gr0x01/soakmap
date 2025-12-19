@@ -21,6 +21,7 @@ import {
 
 import { getSpringBySlug, getAllSpringSlugs } from '@/lib/data/springs';
 import { db } from '@/lib/supabase';
+import { generateSpringSchema, generateBreadcrumbSchema, safeJsonLd } from '@/lib/schema';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringTypeBadge, ExperienceTypeBadge, Badge } from '@/components/ui/Badge';
@@ -53,14 +54,20 @@ export async function generateMetadata({
   const typeLabel = spring.spring_type === 'hot' ? 'Hot Spring' : spring.spring_type === 'warm' ? 'Warm Spring' : 'Swimming Hole';
   const title = `${spring.name} - ${typeLabel} in ${spring.state}`;
   const description = spring.description || `Discover ${spring.name}, a ${spring.experience_type} ${typeLabel.toLowerCase()} in ${spring.state}.`;
+  const canonicalUrl = `https://soakmap.com/springs/${spring.slug}`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
       type: 'website',
+      url: canonicalUrl,
+      siteName: 'SoakMap',
       images: spring.photo_url ? [spring.photo_url] : undefined,
     },
     twitter: {
@@ -171,8 +178,26 @@ export default async function SpringDetailPage({
     ? nearbyResult.data.filter((s) => s.id !== spring.id).slice(0, 5)
     : [];
 
+  // Generate structured data
+  const springSchema = generateSpringSchema(spring);
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: 'https://soakmap.com' },
+    { name: spring.state, url: `https://soakmap.com/states/${spring.state.toLowerCase()}` },
+    { name: spring.name, url: `https://soakmap.com/springs/${spring.slug}` },
+  ]);
+
   return (
     <div className="min-h-screen bg-stone">
+      {/* Structured Data - using safeJsonLd to prevent XSS */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(springSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
+      />
+
       <Header />
 
       <main className="pt-8 pb-20">

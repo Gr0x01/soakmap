@@ -68,9 +68,9 @@ status: Active
    - Verify filters work with Supabase
    - Add loading states
 
-4. **SEO & Deploy** (Day 4)
-   - sitemap.ts
-   - Structured data
+4. **Deploy** (Day 4)
+   - ✅ sitemap.ts - Dynamic sitemap at /sitemap.xml
+   - ✅ Structured data - TouristAttraction + BreadcrumbList schemas
    - Deploy to Vercel
 
 ---
