@@ -12,12 +12,17 @@
  * 4. Inserts into Supabase (upserts by source_id)
  */
 
+import * as cheerio from 'cheerio';
 import { supabase } from './lib/supabase';
 import { createLogger } from './lib/logger';
-import { slugify, chunk, sleep, getSpringTypeFromTemp, cleanText } from './lib/utils';
+import { slugify, chunk, sleep } from './lib/utils';
 import { config } from './lib/config';
 
 const log = createLogger('SwimmingHoles');
+
+// Constants
+const FETCH_TIMEOUT_MS = 30000; // 30 seconds
+const DESCRIPTION_MAX_LENGTH = 1500;
 
 // All US state codes
 const STATES = [
@@ -60,37 +65,55 @@ function parseCoords(text: string): { lat: number | null; lng: number | null } {
 }
 
 /**
- * Extract entries from HTML
+ * Extract entries from HTML using cheerio (safe HTML parser)
+ *
+ * HTML structure:
+ * <table>
+ *   <tr>
+ *     <th bgcolor="#cccccc"><h3><font color="#ff0000">NAME<br>(ABBR)</font></h3></th>
+ *     <td>...</td>
+ *   </tr>
+ *   <tr><th>TOWNS</th><td>...</td></tr>
+ *   <tr><th>LAT, LON</th><td>lat=X, lon=Y...</td></tr>
+ *   ... more data rows ...
+ * </table>
  */
 function parseStateHtml(html: string, stateCode: string): RawEntry[] {
   const entries: RawEntry[] = [];
+  const $ = cheerio.load(html);
 
-  // Split by entry headers (h3 with red font)
-  // Each entry starts with <h3><font color="#ff0000">NAME</font></h3>
-  const entryPattern = /<h3><font color="#ff0000">[\s\S]*?<br>\s*([\s\S]*?)<br><\/font><\/h3>/gi;
-  const entryMatches = [...html.matchAll(entryPattern)];
+  // Find all tables that contain entry data (have th with red font h3)
+  $('table').each((_, tableEl) => {
+    const table = $(tableEl);
 
-  // Alternative: split by <hr> and process each section
-  const sections = html.split('<hr>');
+    // Check if this table has a header row with red font (entry marker)
+    const headerTh = table.find('th').first();
+    const fontEl = headerTh.find('font[color="#ff0000"]');
+    if (!fontEl.length) return;
 
-  for (const section of sections) {
-    // Look for entry name
-    const nameMatch = section.match(/<h3><font color="#ff0000">[\s\S]*?<br>\s*([\s\S]*?)<br><\/font><\/h3>/i);
-    if (!nameMatch) continue;
+    // Extract name from the font element text
+    const fontText = fontEl.text().trim();
+    // Name is before the abbreviation in parentheses, clean up line breaks
+    const cleanText = fontText.replace(/\s+/g, ' ').trim();
+    const nameMatch = cleanText.match(/^([^(\[]+)/);
+    if (!nameMatch) return;
 
-    const name = cleanText(nameMatch[1].replace(/<[^>]*>/g, ''));
-    if (!name || name.length < 2) continue;
+    const name = nameMatch[1].trim();
+    if (!name || name.length < 2) return;
 
-    // Parse table rows
     const entry: Partial<RawEntry> = { name, state: stateCode };
 
-    // Extract field values from table rows
-    const rowPattern = /<th[^>]*>([\s\S]*?)<\/th>\s*<td[^>]*>([\s\S]*?)<\/td>/gi;
-    const rows = [...section.matchAll(rowPattern)];
+    // Parse each row in this table for data fields
+    table.find('tr').each((_, rowEl) => {
+      const row = $(rowEl);
+      const th = row.find('th').first();
+      const td = row.find('td').first();
 
-    for (const row of rows) {
-      const field = cleanText(row[1].replace(/<[^>]*>/g, '').toUpperCase());
-      const value = cleanText(row[2].replace(/<[^>]*>/g, ''));
+      if (!th.length || !td.length) return;
+
+      // Get field name, normalizing whitespace
+      const field = th.text().replace(/\s+/g, ' ').trim().toUpperCase();
+      const value = td.text().trim();
 
       switch (field) {
         case 'LAT, LON':
@@ -130,13 +153,13 @@ function parseStateHtml(html: string, stateCode: string): RawEntry[] {
           entry.directions = value;
           break;
       }
-    }
+    });
 
     // Only include if we have required fields
     if (entry.name && entry.lat && entry.lng) {
       entries.push(entry as RawEntry);
     }
-  }
+  });
 
   return entries;
 }
@@ -165,7 +188,6 @@ function determineExperienceType(
   facilities: string,
   fee: string
 ): 'resort' | 'primitive' | 'hybrid' {
-  const sanctionLower = sanction?.toLowerCase() || '';
   const facilitiesLower = facilities?.toLowerCase() || '';
   const feeLower = fee?.toLowerCase() || '';
 
@@ -250,8 +272,8 @@ function transformToSpring(entry: RawEntry) {
   }
 
   // Truncate if too long
-  if (description.length > 1500) {
-    description = description.slice(0, 1497) + '...';
+  if (description.length > DESCRIPTION_MAX_LENGTH) {
+    description = description.slice(0, DESCRIPTION_MAX_LENGTH - 3) + '...';
   }
 
   return {
@@ -274,20 +296,34 @@ function transformToSpring(entry: RawEntry) {
 async function fetchStatePage(stateCode: string): Promise<string> {
   const url = `https://www.swimmingholes.org/${stateCode.toLowerCase()}.html`;
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'SoakMap/1.0 (https://soakmap.com; building natural springs directory)',
-    },
-  });
+  // Fetch with timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      return ''; // No page for this state
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SoakMapBot/1.0)',
+      },
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return ''; // No page for this state
+      }
+      throw new Error(`Failed to fetch ${url}: ${response.status}`);
     }
-    throw new Error(`Failed to fetch ${url}: ${response.status}`);
-  }
 
-  return response.text();
+    return response.text();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Request timed out for ${url}`);
+    }
+    throw err;
+  }
 }
 
 async function insertSprings(springs: ReturnType<typeof transformToSpring>[], dryRun: boolean) {
@@ -296,31 +332,51 @@ async function insertSprings(springs: ReturnType<typeof transformToSpring>[], dr
     if (springs.length > 0) {
       log.info('Sample:', springs.slice(0, 2));
     }
-    return { inserted: 0, errors: 0 };
+    return { inserted: 0, errors: 0, skipped: 0 };
   }
 
   let inserted = 0;
   let errors = 0;
+  let skipped = 0;
   const batches = chunk(springs, config.batch.insert);
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
     log.progress(i + 1, batches.length, `Inserting batch ${i + 1}/${batches.length}`);
 
-    const { error } = await supabase.from('springs').upsert(batch, {
+    const { error, count } = await supabase.from('springs').upsert(batch, {
       onConflict: 'slug',
       ignoreDuplicates: true,
+      count: 'exact',
     });
 
     if (error) {
-      log.error(`Batch ${i + 1} error: ${error.message}`);
-      errors += batch.length;
+      log.error(`Batch ${i + 1} failed: ${error.message}`);
+      // Try inserting individually to isolate failures
+      for (const spring of batch) {
+        const { error: singleError } = await supabase.from('springs').upsert(spring, {
+          onConflict: 'slug',
+          ignoreDuplicates: true,
+        });
+        if (singleError) {
+          log.error(`Failed to insert "${spring.name}": ${singleError.message}`);
+          errors++;
+        } else {
+          inserted++;
+        }
+      }
     } else {
-      inserted += batch.length;
+      const actualInserted = count || batch.length;
+      inserted += actualInserted;
+      skipped += batch.length - actualInserted;
     }
   }
 
-  return { inserted, errors };
+  if (skipped > 0) {
+    log.info(`Skipped ${skipped} duplicates`);
+  }
+
+  return { inserted, errors, skipped };
 }
 
 async function main() {
