@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Bricolage_Grotesque, Newsreader } from 'next/font/google';
 import './globals.css';
+
+const GA_MEASUREMENT_ID = 'G-PPNREVBS7E';
 
 const bricolage = Bricolage_Grotesque({
   variable: '--font-bricolage',
@@ -61,6 +64,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
+      </head>
       <body className={`${bricolage.variable} ${newsreader.variable} antialiased`}>
         {children}
       </body>
