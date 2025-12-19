@@ -231,14 +231,16 @@ export const db = {
   }),
 
   /**
-   * Get featured springs (high-quality springs with photos)
+   * Get featured springs - prioritizes springs with photos and high confidence,
+   * but falls back to any springs if none match
    */
   getFeaturedSprings: cache(async (limit = 6): Promise<Result<SpringSummary[]>> => {
     const supabase = createSupabaseClient();
 
     const safeLimit = clamp(limit, 1, 20);
 
-    const { data, error } = await supabase
+    // First try: springs with photos and high confidence
+    let { data, error } = await supabase
       .from('springs')
       .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url')
       .not('photo_url', 'is', null)
@@ -248,6 +250,22 @@ export const db = {
     if (error) {
       console.error('Error fetching featured springs:', error);
       return { ok: false, error: `Database error: ${error.message}` };
+    }
+
+    // Fallback: if not enough springs with photos, get a diverse mix
+    if (!data || data.length < safeLimit) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('springs')
+        .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url')
+        .order('name')
+        .limit(safeLimit);
+
+      if (fallbackError) {
+        console.error('Error fetching fallback springs:', fallbackError);
+        return { ok: false, error: `Database error: ${fallbackError.message}` };
+      }
+
+      data = fallbackData;
     }
 
     return { ok: true, data: (data as SpringSummary[]) || [] };
