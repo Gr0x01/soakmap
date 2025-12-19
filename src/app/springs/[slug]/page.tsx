@@ -4,7 +4,6 @@ import Link from 'next/link';
 import {
   MapPin,
   Navigation,
-  Clock,
   Car,
   Signal,
   DollarSign,
@@ -26,6 +25,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringTypeBadge, ExperienceTypeBadge, Badge } from '@/components/ui/Badge';
 import { SpringCard } from '@/components/springs/SpringCard';
+import { SingleSpringMap } from '@/components/maps';
 import type { Spring, NearbySpring, SpringSummary } from '@/types/spring';
 
 // Revalidate every hour
@@ -171,8 +171,6 @@ export default async function SpringDetailPage({
     ? nearbyResult.data.filter((s) => s.id !== spring.id).slice(0, 5)
     : [];
 
-  const typeLabel = spring.spring_type === 'hot' ? 'Hot Spring' : spring.spring_type === 'warm' ? 'Warm Spring' : 'Swimming Hole';
-
   return (
     <div className="min-h-screen bg-stone">
       <Header />
@@ -239,17 +237,14 @@ export default async function SpringDetailPage({
                 </div>
               </div>
 
-              {/* Map placeholder - will be replaced with MapLibre */}
-              <div className="aspect-video rounded-xl bg-cream border border-forest/10 overflow-hidden relative shadow-soft">
-                <div className="absolute inset-0 bg-topo opacity-50" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="w-8 h-8 mx-auto text-forest/40 mb-2" />
-                    <p className="text-sm text-bark/50 font-body">
-                      {spring.lat.toFixed(4)}°N, {Math.abs(spring.lng).toFixed(4)}°W
-                    </p>
-                  </div>
-                </div>
+              {/* Interactive map */}
+              <div className="aspect-video rounded-xl overflow-hidden shadow-soft border border-forest/10">
+                <SingleSpringMap
+                  lat={spring.lat}
+                  lng={spring.lng}
+                  name={spring.name}
+                  springType={spring.spring_type}
+                />
               </div>
             </div>
 

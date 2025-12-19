@@ -146,8 +146,8 @@ src/
 ├── components/
 │   ├── ui/ (Button, Badge, Card)
 │   ├── layout/ (Header, Footer)
-│   ├── springs/ (SpringCard, SpringGrid)
-│   ├── maps/ (SpringMap, SpringsMap) [placeholder]
+│   ├── springs/ (SpringCard, SpringGrid, StateFilters)
+│   ├── maps/ (SpringMap, SingleSpringMap, index.tsx)
 │   └── home/ (SearchHero, FilterToggles, FeaturedSprings)
 ├── lib/
 │   ├── supabase/ (client.ts, server.ts)
@@ -210,9 +210,9 @@ tests/e2e/ (home.spec.ts, spring-detail.spec.ts, state-page.spec.ts)
 
 ---
 
-## Day 3: Detail Pages + Maps
+## Day 3: Detail Pages + Maps ✅ COMPLETED
 
-### 3.1 Spring Detail Page (`/springs/[slug]`)
+### 3.1 Spring Detail Page (`/springs/[slug]`) ✅
 
 - H1: Spring name
 - Badges: temperature type, experience type
@@ -223,21 +223,22 @@ tests/e2e/ (home.spec.ts, spring-detail.spec.ts, state-page.spec.ts)
 - Info cards: access, parking, fees, crowds, etc.
 - Nearby springs (5 closest)
 
-### 3.2 State Page (`/states/[state]`)
+### 3.2 State Page (`/states/[state]`) ✅
 
-- H1: "Hot Springs in [State]" / "Swimming Holes in [State]"
-- Spring count
-- Filter toggles
-- Multi-marker map with clustering
-- Spring grid
+- H1: "Natural Springs in [State]"
+- Spring count stats (hot, warm, cold)
+- URL-based filter toggles (StateFilters component)
+- Multi-marker interactive map
+- Spring grid with filtering
 
-### 3.3 MapLibre Integration
+### 3.3 MapLibre Integration ✅
 
-- Dynamic import with `ssr: false` to avoid SSR issues
-- Free tiles: OpenStreetMap or MapTiler free tier
-- Single marker component for detail pages
-- Clustered markers for state/search pages
-- Navigation controls
+- Dynamic import with `ssr: false` via `src/components/maps/index.tsx`
+- Free tiles: OpenStreetMap
+- `SingleSpringMap` component for detail pages
+- `SpringMap` component for state pages with markers
+- Navigation controls and popups
+- Color-coded markers by spring type (terracotta/moss/river)
 
 ---
 

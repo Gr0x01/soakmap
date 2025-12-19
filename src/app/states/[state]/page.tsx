@@ -7,7 +7,8 @@ import { db } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringGrid } from '@/components/springs/SpringCard';
-import { FilterToggles } from '@/components/home/FilterToggles';
+import { StateFilters } from '@/components/springs/StateFilters';
+import { SpringMap } from '@/components/maps';
 import type { SpringSummary, SpringType, ExperienceType } from '@/types/spring';
 
 // State name lookup
@@ -209,7 +210,7 @@ export default async function StatePage({
         {/* Filters */}
         <div className="container-brutal mb-8">
           <div className="bg-cream rounded-xl p-4 border border-forest/10 shadow-soft">
-            <FilterToggles variant="compact" />
+            <StateFilters />
           </div>
         </div>
 
@@ -252,25 +253,14 @@ export default async function StatePage({
           )}
         </div>
 
-        {/* Map placeholder - will be replaced with MapLibre */}
+        {/* Interactive map */}
         {springs.length > 0 && (
           <div className="container-brutal mt-12">
             <h2 className="font-display text-2xl font-bold text-forest mb-6">
               Map View
             </h2>
-            <div className="aspect-[16/9] rounded-xl bg-cream border border-forest/10 overflow-hidden relative shadow-soft">
-              <div className="absolute inset-0 bg-topo opacity-50" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="w-12 h-12 mx-auto text-forest/30 mb-3" />
-                  <p className="text-bark/50 font-body">
-                    Interactive map coming soon
-                  </p>
-                  <p className="text-sm text-bark/40 font-body mt-1">
-                    {springs.length} springs in {stateName}
-                  </p>
-                </div>
-              </div>
+            <div className="aspect-[16/9] rounded-xl overflow-hidden shadow-soft border border-forest/10">
+              <SpringMap springs={springs} />
             </div>
           </div>
         )}
