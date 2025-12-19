@@ -8,9 +8,9 @@ status: Active
 
 # Active Development Context
 
-**Current Phase:** Phase 2 - Core Pages Complete
-**Status:** Detail pages, state pages, and maps implemented
-**Focus:** Data import + homepage polish
+**Current Phase:** Phase 3 - Activity Pairing Complete
+**Status:** All core pages implemented (detail, state, near)
+**Focus:** Data import + SEO polish + deploy
 
 ---
 
@@ -31,17 +31,20 @@ status: Active
 - ✅ `05-validate-data.ts` - Zod validation (grid-based O(n) dedup, fixed Alaska bounds)
 - ✅ `run-pipeline.ts` - Pipeline orchestrator
 
-### Frontend (Day 3 Complete)
+### Frontend (Day 3.5 Complete)
 - ✅ Spring detail page (`/springs/[slug]`)
 - ✅ State page (`/states/[state]`)
+- ✅ Near page (`/near/[location]`) - 15 seed cities
 - ✅ MapLibre integration (SingleSpringMap, SpringMap)
 - ✅ StateFilters component (URL-based filtering)
+- ✅ SpringCard with optional distance display
 - ✅ Error boundaries for maps
 - ✅ Accessibility: ARIA labels, keyboard navigation
 
 ### Database
-- ✅ 10 springs in database (CA test batch)
-- ✅ State counts working (CA: 3 hot, 7 cold)
+- ✅ 902+ springs imported (USGS + swimmingholes.org)
+- ✅ State counts working
+- ✅ `nearby_springs()` extended with lat/lng/photo_url
 - ✅ All validation passing
 
 ---
@@ -65,12 +68,41 @@ status: Active
    - Verify filters work with Supabase
    - Add loading states
 
-4. **Activity Pairing Pages** (Day 3.5)
-   - `/near/[location]` pages for SEO
+4. **SEO & Deploy** (Day 4)
+   - sitemap.ts
+   - Structured data
+   - Deploy to Vercel
 
 ---
 
-## Recently Completed (Day 3)
+## Recently Completed (Day 3.5)
+
+### Activity Pairing Pages (`/near/[location]`)
+- 15 seed cities in spring-rich states (CO, ID, UT, TX, OR, WA, CA, AZ, NM, NV, MT)
+- Distance-based grouping (0-25mi, 25-50mi, 50-100mi)
+- SpringCard extended with distance badge
+- Reuses SpringMap, StateFilters components
+- SEO metadata for each city
+- ISR with hourly revalidation
+
+**Files created:**
+- `src/lib/data/seed-cities.ts` - 15 cities with coordinates
+- `src/lib/data/cities.ts` - Helper functions
+- `src/app/near/[location]/page.tsx` - Near page
+- `src/components/springs/StatCard.tsx` - Shared stat card component
+- `src/lib/utils/spring-filters.ts` - Shared filter utility
+- `supabase/migrations/002_extend_nearby_springs.sql` - DB migration (applied)
+
+**Code review fixes:**
+- URL injection prevention (use validated city.slug)
+- Case-insensitive slug matching
+- Distance boundary edge case at 100mi
+- ARIA labels for distance badges
+- Extracted duplicate code to shared components
+
+---
+
+## Day 3 Completed
 
 ### Spring Detail Page (`/springs/[slug]`)
 - Hero with photo/gradient placeholder + badges

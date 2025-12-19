@@ -141,7 +141,7 @@ function validateSpring(spring: Record<string, unknown>): ValidationIssue[] {
   if (lat && lng) {
     const inUS =
       (lat >= 24 && lat <= 49 && lng >= -125 && lng <= -66) || // Continental US
-      (lat >= 18 && lat <= 22 && lng >= -161 && lng <= -154) || // Hawaii
+      (lat >= 18 && lat <= 23 && lng >= -161 && lng <= -154) || // Hawaii (Kauai is ~22.1°N)
       (lat >= 51 && lat <= 72 && lng >= -180 && lng <= -130) || // Alaska mainland
       (lat >= 51 && lat <= 55 && lng >= 170 && lng <= 180); // Alaska Aleutians (cross dateline)
 

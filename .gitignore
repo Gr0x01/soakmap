@@ -43,3 +43,6 @@ next-env.d.ts
 tmp
 tmp/*
 .tmp/
+
+# Data pipeline cache
+scripts/data/cache/

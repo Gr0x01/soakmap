@@ -7,9 +7,11 @@ import type { SpringSummary } from '@/types/spring';
 interface SpringCardProps {
   spring: SpringSummary;
   className?: string;
+  /** Optional distance in miles (shown as badge when provided) */
+  distance?: number;
 }
 
-export function SpringCard({ spring, className }: SpringCardProps) {
+export function SpringCard({ spring, className, distance }: SpringCardProps) {
   return (
     <Link
       href={`/springs/${spring.slug}`}
@@ -70,6 +72,14 @@ export function SpringCard({ spring, className }: SpringCardProps) {
         <div className="flex items-center gap-1.5 text-bark/60 text-sm mb-3 font-body">
           <MapPin className="w-3.5 h-3.5" />
           <span>{spring.state}</span>
+          {distance !== undefined && (
+            <>
+              <span className="text-bark/30" aria-hidden="true">·</span>
+              <span aria-label={`${Math.round(distance)} miles away`}>
+                {Math.round(distance)} mi
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex gap-2">

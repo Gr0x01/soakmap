@@ -1,7 +1,7 @@
 ---
 Last-Updated: 2025-12-19
 Maintainer: RB
-Status: Phase 2 - Core Pages Complete
+Status: Phase 3 - Activity Pairing Complete
 ---
 
 # Progress Log: SoakMap
@@ -9,7 +9,7 @@ Status: Phase 2 - Core Pages Complete
 ## Project Timeline
 
 **Project Start**: December 19, 2025
-**Current Phase**: Phase 2 - Core Pages Complete
+**Current Phase**: Phase 3 - Activity Pairing Complete
 **Build Target**: 4 days
 
 ## Key Milestones
@@ -19,12 +19,47 @@ Status: Phase 2 - Core Pages Complete
 | 0 | Project Setup | ✅ Complete | Day 0 |
 | 1 | Data Pipeline | ✅ Complete | Day 1 |
 | 2 | Core Pages | ✅ Complete | Day 2-3 |
-| 3 | Polish & SEO | ⏳ In Progress | Day 3-4 |
-| 4 | Launch | ⏳ Pending | Day 4 |
+| 3 | Activity Pairing | ✅ Complete | Day 3.5 |
+| 4 | Polish & SEO | ⏳ In Progress | Day 4 |
+| 5 | Launch | ⏳ Pending | Day 4 |
 
 ---
 
 ## Detailed Work Log
+
+### December 19, 2025 - Day 3.5: Activity Pairing Pages
+
+**Near Pages (`/near/[location]`):**
+- ✅ 15 seed cities in spring-rich states (CO, ID, UT, TX, OR, WA, CA, AZ, NM, NV, MT)
+- ✅ Distance-based grouping (0-25mi, 25-50mi, 50-100mi)
+- ✅ SpringCard extended with distance badge
+- ✅ SEO metadata with canonical URLs
+- ✅ ISR with hourly revalidation
+
+**Code Review Fixes:**
+- ✅ URL injection prevention (use validated city.slug)
+- ✅ Case-insensitive slug matching
+- ✅ Distance boundary edge case at 100mi
+- ✅ ARIA labels for distance badges
+
+**Refactoring (nice-to-haves):**
+- ✅ Extracted `StatCard` to shared component
+- ✅ Extracted `filterSprings` to shared utility
+- ✅ Moved seed-cities to `src/lib/data/`
+- ✅ Added canonical URLs to state and near pages
+
+**Database Migration:**
+- ✅ `002_extend_nearby_springs.sql` - Added lat, lng, photo_url to function
+
+**Files Created:**
+- `src/lib/data/seed-cities.ts`
+- `src/lib/data/cities.ts`
+- `src/app/near/[location]/page.tsx`
+- `src/components/springs/StatCard.tsx`
+- `src/lib/utils/spring-filters.ts`
+- `supabase/migrations/002_extend_nearby_springs.sql`
+
+---
 
 ### December 19, 2025 - Day 3: Core Pages + Maps
 

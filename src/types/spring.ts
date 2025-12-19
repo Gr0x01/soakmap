@@ -115,7 +115,7 @@ export interface State {
   cold_count: number;
 }
 
-// Nearby spring result
+// Nearby spring result (from nearby_springs PostGIS function)
 export interface NearbySpring {
   id: string;
   name: string;
@@ -124,6 +124,9 @@ export interface NearbySpring {
   spring_type: SpringType;
   experience_type: ExperienceType;
   distance_miles: number;
+  lat: number;
+  lng: number;
+  photo_url: string | null;
 }
 
 // Filter parameters

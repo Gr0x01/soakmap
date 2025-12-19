@@ -52,16 +52,33 @@ interface RawEntry {
 
 /**
  * Parse coordinates from LAT,LON field
- * Format: "lat=32.95169, lon=-116.30582(source:UScampgrounds) (accuracy: exact)"
+ * Formats:
+ * - "lat=32.95169, lon=-116.30582(source:UScampgrounds) (accuracy: exact)"
+ * - Google Maps URL: "maps.google.com/maps?&z=10&q=36.25026+-121.78214"
+ * - Just numbers in text with Google link
  */
 function parseCoords(text: string): { lat: number | null; lng: number | null } {
-  const latMatch = text.match(/lat=(-?\d+\.?\d*)/);
-  const lonMatch = text.match(/lon=(-?\d+\.?\d*)/);
+  // Try explicit lat=/lon= format first
+  const latMatch = text.match(/lat[=:]?\s*(-?\d+\.?\d*)/i);
+  const lonMatch = text.match(/lon[=:]?\s*(-?\d+\.?\d*)/i);
 
-  return {
-    lat: latMatch ? parseFloat(latMatch[1]) : null,
-    lng: lonMatch ? parseFloat(lonMatch[1]) : null,
-  };
+  if (latMatch && lonMatch) {
+    return {
+      lat: parseFloat(latMatch[1]),
+      lng: parseFloat(lonMatch[1]),
+    };
+  }
+
+  // Try Google Maps URL format: q=LAT+LNG or q=LAT+-LNG
+  const googleMatch = text.match(/maps\.google\.com\/maps\?[^"]*q=(-?\d+\.?\d*)\+(-?\d+\.?\d*)/);
+  if (googleMatch) {
+    return {
+      lat: parseFloat(googleMatch[1]),
+      lng: parseFloat(googleMatch[2]),
+    };
+  }
+
+  return { lat: null, lng: null };
 }
 
 /**

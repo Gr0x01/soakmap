@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { ChevronLeft, MapPin, Flame, Droplets, ThermometerSun } from 'lucide-react';
 
 import { db } from '@/lib/supabase';
+import { filterSprings } from '@/lib/utils/spring-filters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringGrid } from '@/components/springs/SpringCard';
+import { StatCard } from '@/components/springs/StatCard';
 import { StateFilters } from '@/components/springs/StateFilters';
 import { SpringMap } from '@/components/maps';
-import type { SpringSummary, SpringType, ExperienceType } from '@/types/spring';
+import type { SpringType, ExperienceType } from '@/types/spring';
 
 // State name lookup
 const STATE_NAMES: Record<string, string> = {
@@ -58,68 +60,27 @@ export async function generateMetadata({
   const springCount = stateData?.spring_count || 0;
   const title = `Hot Springs & Swimming Holes in ${stateName}`;
   const description = `Discover ${springCount} natural springs in ${stateName}. Find hot springs, warm springs, and swimming holes with detailed access info.`;
+  const url = `https://soakmap.com/states/${state.toLowerCase()}`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: url,
+    },
     openGraph: {
       title,
       description,
       type: 'website',
+      url,
+      siteName: 'SoakMap',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   };
-}
-
-// Filter springs based on URL search params
-function filterSprings(
-  springs: SpringSummary[],
-  springType?: SpringType,
-  experienceType?: ExperienceType
-): SpringSummary[] {
-  let filtered = springs;
-
-  if (springType) {
-    filtered = filtered.filter((s) => s.spring_type === springType);
-  }
-
-  if (experienceType) {
-    filtered = filtered.filter((s) => s.experience_type === experienceType);
-  }
-
-  return filtered;
-}
-
-// Stat card component
-function StatCard({
-  icon: Icon,
-  label,
-  count,
-  color,
-}: {
-  icon: React.ElementType;
-  label: string;
-  count: number;
-  color: 'terracotta' | 'moss' | 'river';
-}) {
-  const colorClasses = {
-    terracotta: 'bg-terracotta/10 text-terracotta',
-    moss: 'bg-moss/10 text-moss',
-    river: 'bg-river/10 text-river',
-  };
-
-  return (
-    <div className="bg-cream rounded-xl p-4 border border-forest/10 shadow-soft">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div>
-          <p className="text-2xl font-display font-bold text-forest">{count}</p>
-          <p className="text-sm text-bark/60 font-body">{label}</p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default async function StatePage({
