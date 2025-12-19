@@ -1,0 +1,465 @@
+@import 'tailwindcss';
+
+/* ========================================
+   WILDERNESS GUIDE DESIGN SYSTEM
+   Natural, organic, adventure-forward
+   ======================================== */
+
+:root {
+  /* Colors - Earthy, Natural Palette */
+  --color-stone: #F5F3EF;      /* Warm off-white background */
+  --color-cream: #FEFCF9;      /* Pure warm white for cards */
+  --color-forest: #2D4739;     /* Deep pine green - primary */
+  --color-bark: #1A2B22;       /* Darker forest for text */
+  --color-terracotta: #C65D3B; /* Warm earth red - hot springs */
+  --color-river: #4A7C8C;      /* Muted teal - cold water */
+  --color-moss: #8B9E6B;       /* Soft sage - warm springs */
+  --color-sand: #D4C4A8;       /* Light tan accent */
+
+  /* Semantic aliases */
+  --color-hot: var(--color-terracotta);
+  --color-cold: var(--color-river);
+  --color-warm: var(--color-moss);
+  --color-surface: var(--color-cream);
+  --color-ink: var(--color-bark);
+  --color-concrete: var(--color-stone);
+
+  /* Shadows - Soft, natural */
+  --shadow-soft: 0 4px 20px rgba(45, 71, 57, 0.08);
+  --shadow-medium: 0 8px 30px rgba(45, 71, 57, 0.12);
+  --shadow-lifted: 0 12px 40px rgba(45, 71, 57, 0.15);
+
+  /* Borders - Gentle, organic */
+  --border-subtle: 1px solid rgba(45, 71, 57, 0.1);
+  --border-medium: 1px solid rgba(45, 71, 57, 0.2);
+  --border-accent: 2px solid var(--color-forest);
+
+  /* Typography */
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-body: var(--font-newsreader), Georgia, serif;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+  --space-2xl: 8rem;
+
+  /* Border radius - organic, soft */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+}
+
+/* ========================================
+   TAILWIND THEME INTEGRATION
+   ======================================== */
+
+@theme inline {
+  --color-stone: var(--color-stone);
+  --color-cream: var(--color-cream);
+  --color-forest: var(--color-forest);
+  --color-bark: var(--color-bark);
+  --color-terracotta: var(--color-terracotta);
+  --color-river: var(--color-river);
+  --color-moss: var(--color-moss);
+  --color-sand: var(--color-sand);
+
+  --color-hot: var(--color-hot);
+  --color-cold: var(--color-cold);
+  --color-warm: var(--color-warm);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-ink);
+  --color-concrete: var(--color-concrete);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}
+
+/* ========================================
+   BASE STYLES
+   ======================================== */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-stone);
+  color: var(--color-bark);
+  font-family: var(--font-body);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   TYPOGRAPHY
+   ======================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--color-forest);
+}
+
+/* Hero headline */
+.text-hero {
+  font-size: clamp(3rem, 10vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* ========================================
+   NATURAL SHADOW UTILITIES
+   ======================================== */
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.shadow-medium {
+  box-shadow: var(--shadow-medium);
+}
+
+.shadow-lifted {
+  box-shadow: var(--shadow-lifted);
+}
+
+/* ========================================
+   BORDER UTILITIES
+   ======================================== */
+
+.border-subtle {
+  border: var(--border-subtle);
+}
+
+.border-medium {
+  border: var(--border-medium);
+}
+
+.border-accent {
+  border: var(--border-accent);
+}
+
+/* Legacy support for existing components */
+.border-brutal {
+  border: var(--border-medium);
+}
+
+.shadow-brutal {
+  box-shadow: var(--shadow-medium);
+}
+
+.shadow-brutal-sm {
+  box-shadow: var(--shadow-soft);
+}
+
+/* ========================================
+   COLOR UTILITIES
+   ======================================== */
+
+.bg-stone {
+  background-color: var(--color-stone);
+}
+
+.bg-cream {
+  background-color: var(--color-cream);
+}
+
+.bg-forest {
+  background-color: var(--color-forest);
+}
+
+.bg-terracotta {
+  background-color: var(--color-terracotta);
+}
+
+.bg-river {
+  background-color: var(--color-river);
+}
+
+.bg-moss {
+  background-color: var(--color-moss);
+}
+
+.bg-sand {
+  background-color: var(--color-sand);
+}
+
+/* Semantic colors */
+.bg-concrete {
+  background-color: var(--color-stone);
+}
+
+.bg-surface {
+  background-color: var(--color-cream);
+}
+
+.bg-ink {
+  background-color: var(--color-bark);
+}
+
+.bg-hot {
+  background-color: var(--color-terracotta);
+}
+
+.bg-cold {
+  background-color: var(--color-river);
+}
+
+.bg-warm {
+  background-color: var(--color-moss);
+}
+
+.text-forest {
+  color: var(--color-forest);
+}
+
+.text-bark {
+  color: var(--color-bark);
+}
+
+.text-terracotta {
+  color: var(--color-terracotta);
+}
+
+.text-river {
+  color: var(--color-river);
+}
+
+.text-moss {
+  color: var(--color-moss);
+}
+
+/* Semantic text colors */
+.text-ink {
+  color: var(--color-bark);
+}
+
+.text-surface {
+  color: var(--color-cream);
+}
+
+.text-hot {
+  color: var(--color-terracotta);
+}
+
+.text-cold {
+  color: var(--color-river);
+}
+
+.text-warm {
+  color: var(--color-moss);
+}
+
+/* ========================================
+   ORGANIC SHAPES (Background decorations)
+   ======================================== */
+
+.blob {
+  position: absolute;
+  border-radius: 60% 40% 50% 50% / 50% 50% 40% 60%;
+  filter: blur(60px);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob-hot {
+  background: linear-gradient(135deg, var(--color-terracotta), #E8A090);
+}
+
+.blob-cold {
+  background: linear-gradient(135deg, var(--color-river), #7BA3B0);
+}
+
+.blob-warm {
+  background: linear-gradient(135deg, var(--color-moss), #A8B891);
+}
+
+/* Subtle organic animation */
+@keyframes blob-morph {
+  0%, 100% {
+    border-radius: 60% 40% 50% 50% / 50% 50% 40% 60%;
+    transform: rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 50% 60% 40% 50% / 40% 50% 60% 50%;
+    transform: rotate(5deg) scale(1.02);
+  }
+  66% {
+    border-radius: 40% 50% 60% 40% / 60% 40% 50% 50%;
+    transform: rotate(-5deg) scale(0.98);
+  }
+}
+
+.blob-animated {
+  animation: blob-morph 25s ease-in-out infinite;
+}
+
+/* ========================================
+   INTERACTIVE STATES
+   ======================================== */
+
+/* Focus ring for accessibility */
+.focus-natural:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 3px;
+}
+
+/* Legacy support */
+.focus-brutal:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 3px;
+}
+
+/* Card/button hover lift */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lifted);
+}
+
+/* Button press effect */
+.hover-press {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hover-press:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ========================================
+   LAYOUT UTILITIES
+   ======================================== */
+
+.container-brutal {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
+}
+
+@media (max-width: 640px) {
+  .container-brutal {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+}
+
+/* ========================================
+   TEXTURE OVERLAYS
+   ======================================== */
+
+/* Subtle paper texture */
+.texture-paper::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Legacy support */
+.grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ========================================
+   SELECTION STYLING
+   ======================================== */
+
+::selection {
+  background-color: var(--color-moss);
+  color: white;
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-stone);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-sand);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-stone);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-forest);
+}
+
+/* ========================================
+   DECORATIVE ELEMENTS
+   ======================================== */
+
+/* Topographic pattern background (subtle) */
+.bg-topo {
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c12 0 22 10 24 22M30 15c7 0 13 6 15 13M30 25c3 0 5 2 6 5' fill='none' stroke='%232D4739' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E");
+}
+
+/* Water ripple effect for cards */
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, var(--color-river) 0%, transparent 70%);
+  animation: ripple 2s ease-out infinite;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ripple-effect:hover::after {
+  opacity: 1;
+}
