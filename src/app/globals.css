@@ -463,3 +463,118 @@ h6 {
 .ripple-effect:hover::after {
   opacity: 1;
 }
+
+/* ========================================
+   MAP POPUP STYLES
+   ======================================== */
+
+.spring-popup .maplibregl-popup-content {
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lifted);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(45, 71, 57, 0.1);
+}
+
+.spring-popup .maplibregl-popup-close-button {
+  font-size: 18px;
+  color: var(--color-bark);
+  opacity: 0.5;
+  padding: 8px 10px;
+  right: 2px;
+  top: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.spring-popup .maplibregl-popup-close-button:hover {
+  background: transparent;
+  opacity: 1;
+}
+
+.spring-popup .maplibregl-popup-tip {
+  border-top-color: var(--color-cream);
+}
+
+.spring-popup-content {
+  padding: 14px 16px 16px;
+}
+
+.spring-popup-header {
+  margin-bottom: 8px;
+}
+
+.spring-popup-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.spring-popup-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-forest);
+  line-height: 1.25;
+  margin: 0 0 6px 0;
+}
+
+.spring-popup-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.spring-popup-experience {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-bark);
+  opacity: 0.7;
+}
+
+.spring-popup-experience svg {
+  opacity: 0.6;
+}
+
+.spring-popup-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-cream);
+  background: var(--color-forest);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.spring-popup-link:hover {
+  background: var(--color-bark);
+}
+
+.spring-popup-link:active {
+  transform: scale(0.98);
+}
+
+.spring-popup-link svg {
+  transition: transform 0.15s ease;
+}
+
+.spring-popup-link:hover svg {
+  transform: translateX(2px);
+}

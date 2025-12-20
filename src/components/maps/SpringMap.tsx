@@ -20,7 +20,6 @@ interface SpringMapProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
-  onMarkerClick?: (slug: string) => void;
 }
 
 // Color mapping for spring types
@@ -68,9 +67,7 @@ export function SpringMap({
   center,
   zoom = 6,
   className = '',
-  onMarkerClick,
 }: SpringMapProps) {
-  const router = useRouter();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -84,15 +81,6 @@ export function SpringMap({
     const avgLng = springs.reduce((sum, s) => sum + s.lng, 0) / springs.length;
     return [avgLng, avgLat];
   }, [center, springs]);
-
-  // Handle marker navigation safely
-  const handleMarkerClick = useCallback((slug: string) => {
-    if (onMarkerClick) {
-      onMarkerClick(slug);
-    } else if (isValidSlug(slug)) {
-      router.push(`/springs/${slug}`);
-    }
-  }, [onMarkerClick, router]);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -202,8 +190,8 @@ export function SpringMap({
 
       const popup = new maplibregl.Popup({
         offset: 18,
-        closeButton: true,
-        closeOnClick: false,
+        closeButton: false,
+        closeOnClick: true,
         className: 'spring-popup',
         maxWidth: '280px',
       }).setHTML(`
@@ -238,7 +226,7 @@ export function SpringMap({
       });
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 10 });
     }
-  }, [springs, handleMarkerClick]);
+  }, [springs]);
 
   return (
     <div

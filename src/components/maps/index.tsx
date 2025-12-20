@@ -98,7 +98,6 @@ export function SpringMap(props: {
   center?: [number, number];
   zoom?: number;
   className?: string;
-  onMarkerClick?: (slug: string) => void;
 }) {
   return (
     <MapErrorBoundary className={props.className}>
