@@ -36,6 +36,8 @@ export const config = {
   // Rate limiting
   rateLimit: {
     swimmingholes: 500, // ms between requests
+    idaho: 500, // ms between detail page requests
+    soakoregon: 500, // ms between page requests
     tavily: 200,
     openai: 100,
   },

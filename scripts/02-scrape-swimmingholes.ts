@@ -17,6 +17,7 @@ import { supabase } from './lib/supabase';
 import { createLogger } from './lib/logger';
 import { slugify, chunk, sleep } from './lib/utils';
 import { config } from './lib/config';
+import { filterNewSprings, clearSpringCache } from './lib/dedup';
 
 const log = createLogger('SwimmingHoles');
 
@@ -48,6 +49,99 @@ interface RawEntry {
   camping: string;
   confidence: string;
   directions: string;
+  parentArea?: string; // For sub-places within area entries
+}
+
+interface SubPlace {
+  name: string;
+  code: string;
+  description: string;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * Check if entry name indicates an area with multiple places
+ * Returns the number of places or null if not an area
+ */
+function isAreaEntry(name: string): number | null {
+  const match = name.match(/\[(\d+)\s*PLACES?\]/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/**
+ * Parse sub-places from DIRECTIONS field HTML
+ * Formats seen (various color codes and bold arrangements):
+ * - <font color="red">NAME [CODE]:</font>
+ * - <font color="red"><b>NAME [CODE]:</b></font>
+ * - <b><font color="red"><b>NAME [CODE]:</b></font></b>
+ * - <font color="#cc0000">NAME [CODE]:</font>
+ * - Extra bold tags: </b><b><font...><b>NAME [CODE]:</b></font>
+ */
+function parseSubPlaces(directionsHtml: string): SubPlace[] {
+  const subPlaces: SubPlace[] = [];
+
+  // Multiple regex patterns to catch different formats (no global flag - use matchAll)
+  const patterns = [
+    // Standard: <font color="red">NAME [CODE]:</font>
+    /<font color=["']?(?:red|#[cf][cf]0000)["']?>\s*(?:<b>)?([A-Z][A-Z0-9 .&;'-]+?)\s*\[([A-Z]{3,5})\]:\s*(?:<\/b>)?<\/font>/gi,
+    // With extra bold wrapper: <b><font color="red"><b>NAME [CODE]:</b></font>
+    /<b><font color=["']?(?:red|#[cf][cf]0000)["']?><b>([A-Z][A-Z0-9 .&;'-]+?)\s*\[([A-Z]{3,5})\]:<\/b><\/font>/gi,
+  ];
+
+  const matches: Array<{ name: string; code: string; index: number; endIndex: number }> = [];
+  const seenIndices = new Set<number>();
+
+  for (const pattern of patterns) {
+    // Create fresh regex instance to avoid global flag state issues
+    const regex = new RegExp(pattern.source, pattern.flags);
+    for (const match of directionsHtml.matchAll(regex)) {
+      // Avoid duplicates from overlapping patterns
+      if (seenIndices.has(match.index!)) continue;
+      seenIndices.add(match.index!);
+
+      matches.push({
+        name: match[1].trim().replace(/&nbsp;/g, ' ').replace(/\s+/g, ' '),
+        code: match[2],
+        index: match.index!,
+        endIndex: match.index! + match[0].length,
+      });
+    }
+  }
+
+  // Sort matches by index
+  matches.sort((a, b) => a.index - b.index);
+
+  // Extract content between each sub-place marker
+  for (let i = 0; i < matches.length; i++) {
+    const current = matches[i];
+    // Section starts after the header and ends at next header (or end of HTML)
+    const nextIndex = i < matches.length - 1 ? matches[i + 1].index : directionsHtml.length;
+    const section = directionsHtml.slice(current.endIndex, nextIndex);
+
+    // Extract coordinates from this section
+    const coords = parseCoords(section);
+
+    if (coords.lat && coords.lng) {
+      // Clean description: strip HTML tags, limit length
+      const cleanDesc = section
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 500);
+
+      subPlaces.push({
+        name: current.name,
+        code: current.code,
+        description: cleanDesc,
+        lat: coords.lat,
+        lng: coords.lng,
+      });
+    }
+  }
+
+  return subPlaces;
 }
 
 /**
@@ -94,10 +188,14 @@ function parseCoords(text: string): { lat: number | null; lng: number | null } {
  *   <tr><th>LAT, LON</th><td>lat=X, lon=Y...</td></tr>
  *   ... more data rows ...
  * </table>
+ *
+ * Area entries have format: "AREA NAME [N PLACES] (ABBR)" and contain
+ * sub-places in the DIRECTIONS field with their own coordinates.
  */
 function parseStateHtml(html: string, stateCode: string): RawEntry[] {
   const entries: RawEntry[] = [];
   const $ = cheerio.load(html);
+  const processedNames = new Set<string>(); // Avoid duplicates from nested tables
 
   // Find all tables that contain entry data (have th with red font h3)
   $('table').each((_, tableEl) => {
@@ -118,7 +216,16 @@ function parseStateHtml(html: string, stateCode: string): RawEntry[] {
     const name = nameMatch[1].trim();
     if (!name || name.length < 2) return;
 
+    // Skip if we've already processed this entry (nested tables cause duplicates)
+    const entryKey = `${name}-${stateCode}`;
+    if (processedNames.has(entryKey)) return;
+    processedNames.add(entryKey);
+
+    // Check if this is an area entry with multiple places
+    const placeCount = isAreaEntry(fontText);
+
     const entry: Partial<RawEntry> = { name, state: stateCode };
+    let directionsHtml = ''; // Keep raw HTML for sub-place parsing
 
     // Parse each row in this table for data fields
     table.find('tr').each((_, rowEl) => {
@@ -168,13 +275,44 @@ function parseStateHtml(html: string, stateCode: string): RawEntry[] {
           break;
         case 'DIRECTIONS':
           entry.directions = value;
+          directionsHtml = td.html() || ''; // Keep HTML for sub-place parsing
           break;
       }
     });
 
-    // Only include if we have required fields
-    if (entry.name && entry.lat && entry.lng) {
-      entries.push(entry as RawEntry);
+    // Handle area entries with sub-places
+    if (placeCount && placeCount > 1 && directionsHtml) {
+      const subPlaces = parseSubPlaces(directionsHtml);
+
+      for (const sub of subPlaces) {
+        entries.push({
+          name: sub.name,
+          state: stateCode,
+          lat: sub.lat,
+          lng: sub.lng,
+          water: entry.water || '',
+          type: entry.type || '',
+          description: sub.description || entry.description || '',
+          sanction: entry.sanction || '',
+          fee: entry.fee || '',
+          facilities: entry.facilities || '',
+          bathingSuits: entry.bathingSuits || '',
+          camping: entry.camping || '',
+          confidence: entry.confidence || '',
+          directions: sub.description || '',
+          parentArea: name, // Track parent area for unique source_id
+        });
+      }
+
+      // If no sub-places found but parent has coords, still include parent
+      if (subPlaces.length === 0 && entry.lat && entry.lng) {
+        entries.push(entry as RawEntry);
+      }
+    } else {
+      // Standard single-place entry
+      if (entry.name && entry.lat && entry.lng) {
+        entries.push(entry as RawEntry);
+      }
     }
   });
 
@@ -293,9 +431,19 @@ function transformToSpring(entry: RawEntry) {
     description = description.slice(0, DESCRIPTION_MAX_LENGTH - 3) + '...';
   }
 
+  // Generate unique source_id - include parent area for sub-places to avoid collisions
+  const sourceId = entry.parentArea
+    ? `swimmingholes-${slugify(entry.parentArea, entry.state)}-${slugify(entry.name, '')}`
+    : `swimmingholes-${slugify(entry.name, entry.state)}`;
+
+  // Generate slug - include parent area suffix for sub-places
+  const slug = entry.parentArea
+    ? slugify(`${entry.name} ${entry.parentArea}`, entry.state)
+    : slugify(entry.name, entry.state);
+
   return {
     name: entry.name,
-    slug: slugify(entry.name, entry.state),
+    slug,
     state: entry.state,
     location: `POINT(${entry.lng} ${entry.lat})`,
     spring_type: springType,
@@ -305,7 +453,7 @@ function transformToSpring(entry: RawEntry) {
     clothing_optional: determineClothingOptional(entry.bathingSuits || ''),
     confidence: mapConfidence(entry.confidence || ''),
     source: 'swimmingholes',
-    source_id: `swimmingholes-${slugify(entry.name, entry.state)}`,
+    source_id: sourceId,
     enrichment_status: 'pending',
   };
 }
@@ -400,9 +548,16 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const limitIdx = args.indexOf('--limit');
-  const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : undefined;
+  const limitArg = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : undefined;
   const stateIdx = args.indexOf('--state');
   const singleState = stateIdx >= 0 ? args[stateIdx + 1]?.toUpperCase() : undefined;
+
+  // Validate limit argument
+  if (limitArg !== undefined && (isNaN(limitArg) || limitArg <= 0)) {
+    log.error('--limit must be a positive integer');
+    process.exit(1);
+  }
+  const limit = limitArg;
 
   log.info('Starting swimmingholes.org scrape');
   if (dryRun) log.warn('DRY RUN MODE - no data will be inserted');
@@ -446,20 +601,48 @@ async function main() {
     return;
   }
 
-  // Dedupe by slug
+  // Dedupe by slug (local dedup)
   const uniqueSprings = Array.from(
     new Map(allSprings.map((s) => [s.slug, s])).values()
   );
   log.info(`Total unique springs: ${uniqueSprings.length}`);
 
+  // Pre-insert deduplication - check against existing database
+  log.info('Checking for duplicates against existing database...');
+  const springsWithCoords = uniqueSprings.map((s) => {
+    // Extract lat/lng from POINT string
+    const match = s.location.match(/POINT\((-?\d+\.?\d*) (-?\d+\.?\d*)\)/);
+    return {
+      ...s,
+      lat: match ? parseFloat(match[2]) : 0,
+      lng: match ? parseFloat(match[1]) : 0,
+    };
+  });
+
+  const { new: newSprings, duplicates } = await filterNewSprings(springsWithCoords);
+  log.info(`Found ${newSprings.length} new springs, ${duplicates.length} duplicates`);
+
+  if (duplicates.length > 0) {
+    log.info('Skipping duplicates:');
+    for (const dupe of duplicates.slice(0, 5)) {
+      log.info(`  - "${dupe.spring.name}" (matches existing)`);
+    }
+    if (duplicates.length > 5) {
+      log.info(`  ... and ${duplicates.length - 5} more`);
+    }
+  }
+
   // Apply limit if specified
-  const springsToInsert = limit ? uniqueSprings.slice(0, limit) : uniqueSprings;
+  const springsToInsert = limit ? newSprings.slice(0, limit) : newSprings;
 
   // Insert into database
   log.info('Inserting into database...');
   const { inserted, errors } = await insertSprings(springsToInsert, dryRun);
 
-  log.done(`Scraped ${inserted} springs (${errors} errors)`);
+  // Clear cache after insert
+  clearSpringCache();
+
+  log.done(`Scraped ${inserted} springs (${errors} errors, ${duplicates.length} duplicates skipped)`);
 }
 
 main().catch((err) => {

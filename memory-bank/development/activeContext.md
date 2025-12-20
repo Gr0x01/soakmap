@@ -1,16 +1,16 @@
 ---
 title: Active Development Context
 created: 2025-12-19
-last-updated: 2025-12-19
+last-updated: 2025-12-20
 maintainer: Claude
 status: Active
 ---
 
 # Active Development Context
 
-**Current Phase:** Phase 3 - Activity Pairing Complete
-**Status:** All core pages implemented (detail, state, near)
-**Focus:** Data import + SEO polish + deploy
+**Current Phase:** Phase 5 - Data Import Complete (3,070 springs)
+**Status:** Ready for enrichment and homepage polish
+**Focus:** Enrichment + homepage polish + deploy
 
 ---
 
@@ -24,12 +24,18 @@ status: Active
 - ✅ Next.js project created (Day 1)
 - ✅ Supabase project created with PostGIS + schema
 
-### Data Pipeline (Security-Hardened)
-- ✅ `01-import-gnis.ts` - USGS per-state hot springs import (adm-zip, cheerio, timeouts)
-- ✅ `02-scrape-swimmingholes.ts` - Swimming holes scraper (cheerio HTML parser, tested: 19 CA)
-- ✅ `04-enrich-springs.ts` - Tavily + gpt-4o-mini (validated responses, 429 retry w/ backoff)
-- ✅ `05-validate-data.ts` - Zod validation (grid-based O(n) dedup, fixed Alaska bounds)
-- ✅ `run-pipeline.ts` - Pipeline orchestrator
+### Data Pipeline (8 Sources)
+- ✅ `01-import-gnis.ts` - USGS per-state hot springs (550 springs)
+- ✅ `02-scrape-swimmingholes.ts` - Enhanced with sub-place parsing (1,116 springs)
+- ✅ `03-scrape-idaho.ts` - idahohotsprings.com (9 springs)
+- ✅ `04-enrich-springs.ts` - Tavily + gpt-4o-mini enrichment
+- ✅ `05-validate-data.ts` - Zod validation + duplicate merge
+- ✅ `06-scrape-soakoregon.ts` - soakoregon.com (32 springs)
+- ✅ `07-import-pangaea.ts` - PANGAEA NOAA dataset (1,065 springs)
+- ✅ `08-scrape-wikipedia.ts` - Wikipedia with article fetching (48 springs)
+- ✅ `09-scrape-hotspringslocator.ts` - hotspringslocator.com (53 springs)
+- ✅ `10-scrape-tophotsprings.ts` - tophotsprings.com 24 states (197 springs)
+- ✅ `lib/dedup.ts` - Pre-insert dedup + merge utilities
 
 ### Frontend (Day 3.5 Complete)
 - ✅ Spring detail page (`/springs/[slug]`)
@@ -42,122 +48,78 @@ status: Active
 - ✅ Accessibility: ARIA labels, keyboard navigation
 
 ### Database
-- ✅ 902+ springs imported (USGS + swimmingholes.org)
-- ✅ State counts working
+- ✅ **3,070 springs** across 8 sources (deduplicated)
+- ✅ State counts working (45+ states with springs)
 - ✅ `nearby_springs()` extended with lat/lng/photo_url
-- ✅ All validation passing
+- ✅ Pre-insert + post-import deduplication system
+
+---
+
+## Data Import Summary (December 20, 2025)
+
+| Source | Count | Notes |
+|--------|-------|-------|
+| swimmingholes.org | 1,116 | Sub-place parsing, western US focus |
+| PANGAEA NOAA | 1,065 | Historical geothermal data (1980s) |
+| USGS GNIS | 550 | Authoritative coordinates |
+| tophotsprings.com | 197 | 24 US states, excellent descriptions |
+| hotspringslocator.com | 53 | 6 western states, GPS + chemistry |
+| Wikipedia | 48 | Rich history and descriptions |
+| soakoregon.com | 32 | Oregon-focused, detailed access info |
+| idahohotsprings.com | 9 | Idaho-focused |
+| **Total** | **3,070** | Clean, deduplicated |
 
 ---
 
 ## Immediate Next Steps
 
-1. **Run Full Import**
-   ```bash
-   npx tsx scripts/02-scrape-swimmingholes.ts  # All 50 states (~1,400 springs)
-   npx tsx scripts/01-import-gnis.ts           # USGS hot springs (~1,600)
-   npx tsx scripts/05-validate-data.ts         # Validate + dedupe
-   ```
-
-2. **Run Enrichment** (requires OPENAI_API_KEY + TAVILY_API_KEY)
+1. **Run Enrichment** (API keys configured in .env.local)
    ```bash
    npx tsx scripts/04-enrich-springs.ts --limit 100  # Start with 100
    ```
 
-3. **Polish Homepage**
-   - Connect to real data
+2. **Polish Homepage**
+   - Connect to real data (3,070 springs available)
    - Verify filters work with Supabase
    - Add loading states
 
-4. **Deploy** (Day 4)
+3. **Deploy** (Day 4)
    - ✅ sitemap.ts - Dynamic sitemap at /sitemap.xml
    - ✅ Structured data - TouristAttraction + BreadcrumbList schemas
    - Deploy to Vercel
 
 ---
 
-## Recently Completed (Day 3.5)
+## Recently Completed (Day 5 - Extended Data Import)
 
-### Activity Pairing Pages (`/near/[location]`)
-- 15 seed cities in spring-rich states (CO, ID, UT, TX, OR, WA, CA, AZ, NM, NV, MT)
-- Distance-based grouping (0-25mi, 25-50mi, 50-100mi)
-- SpringCard extended with distance badge
-- Reuses SpringMap, StateFilters components
-- SEO metadata for each city
-- ISR with hourly revalidation
+### New Scrapers Built
+- **PANGAEA NOAA Import** (`07-import-pangaea.ts`)
+  - 1,065 springs from NOAA's 1980-1981 geothermal survey
+  - Tab-delimited dataset with temperature data
+  - Fixed missing `experience_type` field bug
 
-**Files created:**
-- `src/lib/data/seed-cities.ts` - 15 cities with coordinates
-- `src/lib/data/cities.ts` - Helper functions
-- `src/app/near/[location]/page.tsx` - Near page
-- `src/components/springs/StatCard.tsx` - Shared stat card component
-- `src/lib/utils/spring-filters.ts` - Shared filter utility
-- `supabase/migrations/002_extend_nearby_springs.sql` - DB migration (applied)
+- **Wikipedia Scraper** (`08-scrape-wikipedia.ts`)
+  - Parses List of hot springs in the United States
+  - Fetches individual Wikipedia articles for rich content
+  - Extracts coordinates from geo microformat
+  - Falls back to Tavily API for missing coordinates
 
-**Code review fixes:**
-- URL injection prevention (use validated city.slug)
-- Case-insensitive slug matching
-- Distance boundary edge case at 100mi
-- ARIA labels for distance badges
-- Extracted duplicate code to shared components
+- **hotspringslocator.com Scraper** (`09-scrape-hotspringslocator.ts`)
+  - 6 western states (CA, ID, MT, NV, OR, WA)
+  - High-quality data: GPS, temperature, water chemistry, pH
+  - State bounds validation for coordinate accuracy
 
----
+- **tophotsprings.com Scraper** (`10-scrape-tophotsprings.ts`)
+  - 24 US states (including eastern states: FL, AR, NC, NY, etc.)
+  - Coordinates from Google Maps embeds
+  - Excellent descriptions from individual pages
+  - Filters out non-spring pages and international content
 
-## Day 3 Completed
-
-### Spring Detail Page (`/springs/[slug]`)
-- Hero with photo/gradient placeholder + badges
-- Interactive MapLibre map with marker
-- "Get Directions" button (Google Maps link)
-- Info cards grid (access, parking, fees, crowds, etc.)
-- Safety warnings section
-- Nearby springs (5 closest with distance)
-- Dynamic SEO metadata
-- ISR with hourly revalidation
-
-### State Page (`/states/[state]`)
-- Hero with state name and description
-- Stats cards (hot/warm/cold counts)
-- URL-based filtering via StateFilters component
-- Interactive SpringMap with all state springs
-- SpringGrid with filtered results
-- Empty state handling
-
-### MapLibre Components
-- `SingleSpringMap` - Detail page single marker
-- `SpringMap` - Multi-marker with auto-bounds
-- Dynamic imports (SSR disabled)
-- OpenStreetMap tiles
-- Color-coded markers by spring type
-- Error boundaries with retry
-
-### Security Fixes (Code Review)
-- XSS prevention: `escapeHtml()` for popup content
-- Open redirect prevention: slug validation + Next.js router
-- Memory leak prevention: proper event listener cleanup
-- Type validation for URL filter params
-
-### Accessibility
-- `aria-pressed` and `aria-label` on filter buttons
-- `role="group"` for filter sections
-- Keyboard navigation (Enter/Space) for map markers
-- `role="application"` on map containers
-
----
-
-## Technical Debt
-
-None - clean implementation with security review completed.
-
----
-
-## Environment
-
-**Required Keys (configured in .env.local):**
-- ✅ `NEXT_PUBLIC_SUPABASE_URL`
-- ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- ✅ `SUPABASE_SERVICE_ROLE_KEY`
-- ⏳ `OPENAI_API_KEY` (for enrichment)
-- ⏳ `TAVILY_API_KEY` (for enrichment)
+### Data Growth
+- Started session: 2,820 springs
+- Added from hotspringslocator.com: +53 springs
+- Added from tophotsprings.com: +197 springs
+- **Final count: 3,070 springs**
 
 ---
 
@@ -173,19 +135,37 @@ npm run type-check             # TypeScript verification
 npm run test:e2e               # Playwright tests
 npm run test:e2e:ui            # Interactive test mode
 
-# Data Pipeline
-npx tsx scripts/run-pipeline.ts                    # Show help
-npx tsx scripts/run-pipeline.ts swimmingholes      # Scrape all states
-npx tsx scripts/run-pipeline.ts gnis               # Import USGS data
-npx tsx scripts/run-pipeline.ts enrich --limit 50  # Enrich 50 springs
-npx tsx scripts/run-pipeline.ts validate           # Validate + update counts
-npx tsx scripts/run-pipeline.ts all                # Run entire pipeline
+# Data Pipeline - All Scrapers
+npx tsx scripts/01-import-gnis.ts
+npx tsx scripts/02-scrape-swimmingholes.ts
+npx tsx scripts/03-scrape-idaho.ts
+npx tsx scripts/06-scrape-soakoregon.ts
+npx tsx scripts/07-import-pangaea.ts
+npx tsx scripts/08-scrape-wikipedia.ts
+npx tsx scripts/09-scrape-hotspringslocator.ts
+npx tsx scripts/10-scrape-tophotsprings.ts
 
-# Individual scripts with options
-npx tsx scripts/02-scrape-swimmingholes.ts --state CA --limit 10 --dry-run
-npx tsx scripts/04-enrich-springs.ts --state ID --limit 20
-npx tsx scripts/05-validate-data.ts --fix
+# Enrichment
+npx tsx scripts/04-enrich-springs.ts --limit 100
+
+# Validation
+npx tsx scripts/05-validate-data.ts
+npx tsx scripts/05-validate-data.ts --fix-duplicates
+
+# Dry runs
+npx tsx scripts/10-scrape-tophotsprings.ts --dry-run --state ID --limit 5
 ```
+
+---
+
+## Environment
+
+**Required Keys (configured in .env.local):**
+- ✅ `NEXT_PUBLIC_SUPABASE_URL`
+- ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- ✅ `SUPABASE_SERVICE_ROLE_KEY`
+- ✅ `OPENAI_API_KEY` (for enrichment)
+- ✅ `TAVILY_API_KEY` (for enrichment)
 
 ---
 

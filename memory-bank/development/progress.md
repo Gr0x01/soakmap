@@ -1,7 +1,7 @@
 ---
-Last-Updated: 2025-12-19
+Last-Updated: 2025-12-20
 Maintainer: RB
-Status: Phase 3 - Activity Pairing Complete
+Status: Phase 5 - Data Import Complete
 ---
 
 # Progress Log: SoakMap
@@ -9,8 +9,8 @@ Status: Phase 3 - Activity Pairing Complete
 ## Project Timeline
 
 **Project Start**: December 19, 2025
-**Current Phase**: Phase 3 - Activity Pairing Complete
-**Build Target**: 4 days
+**Current Phase**: Phase 5 - Data Import Complete (3,070 springs)
+**Build Target**: 4 days (extended for data import)
 
 ## Key Milestones
 
@@ -20,44 +20,81 @@ Status: Phase 3 - Activity Pairing Complete
 | 1 | Data Pipeline | ✅ Complete | Day 1 |
 | 2 | Core Pages | ✅ Complete | Day 2-3 |
 | 3 | Activity Pairing | ✅ Complete | Day 3.5 |
-| 4 | Polish & SEO | ⏳ In Progress | Day 4 |
-| 5 | Launch | ⏳ Pending | Day 4 |
+| 4 | Extended Data Import | ✅ Complete | Day 4-5 |
+| 5 | Polish & SEO | ⏳ In Progress | Day 5 |
+| 6 | Launch | ⏳ Pending | Day 6 |
 
 ---
 
 ## Detailed Work Log
 
+### December 20, 2025 - Day 5: Extended Data Import
+
+**New Scrapers Built:**
+- ✅ `07-import-pangaea.ts` - PANGAEA NOAA dataset (1,065 springs)
+- ✅ `08-scrape-wikipedia.ts` - Wikipedia list + article fetching (48 springs)
+- ✅ `09-scrape-hotspringslocator.ts` - 6 western states (53 springs)
+- ✅ `10-scrape-tophotsprings.ts` - 24 US states (197 springs)
+
+**Data Import Results:**
+| Source | Count | Notes |
+|--------|-------|-------|
+| swimmingholes.org | 1,116 | Sub-place parsing, western US |
+| PANGAEA NOAA | 1,065 | Historical geothermal (1980s) |
+| USGS GNIS | 550 | Authoritative coordinates |
+| tophotsprings.com | 197 | 24 states, excellent descriptions |
+| hotspringslocator.com | 53 | GPS, chemistry, pH data |
+| Wikipedia | 48 | Rich history and descriptions |
+| soakoregon.com | 32 | Oregon-focused |
+| idahohotsprings.com | 9 | Idaho-focused |
+| **Total** | **3,070** | Clean, deduplicated |
+
+**Technical Highlights:**
+- Wikipedia scraper fetches individual articles for rich content
+- Extracts coordinates from geo microformat (`span.geo`)
+- tophotsprings.com covers eastern states (FL, AR, NC, NY, etc.)
+- Coordinates from Google Maps embeds (`!2d{lng}!3d{lat}`)
+- Fixed PANGAEA importer missing `experience_type` field
+
+---
+
+### December 19, 2025 - Day 4: Initial Data Pipeline Enhancement
+
+**Deduplication System:**
+- ✅ Pre-insert dedup: Scrapers check against existing DB
+- ✅ Post-import merge: `--fix-duplicates` flag
+- ✅ Smart matching: Normalized name + state OR proximity + name similarity
+- ✅ Richness scoring: Keeps entry with most data
+
+**Additional Scrapers:**
+- ✅ `03-scrape-idaho.ts` - idahohotsprings.com (9 springs)
+- ✅ `06-scrape-soakoregon.ts` - soakoregon.com (32 springs)
+
+**swimmingholes.org Enhancement:**
+- 3x more data: 327 → 1,100 entries
+- Parses area sub-places like "CHICO AREA [6 PLACES]"
+- Multiple regex patterns for HTML variations
+
+---
+
 ### December 19, 2025 - Day 3.5: Activity Pairing Pages
 
 **Near Pages (`/near/[location]`):**
-- ✅ 15 seed cities in spring-rich states (CO, ID, UT, TX, OR, WA, CA, AZ, NM, NV, MT)
+- ✅ 15 seed cities in spring-rich states
 - ✅ Distance-based grouping (0-25mi, 25-50mi, 50-100mi)
 - ✅ SpringCard extended with distance badge
 - ✅ SEO metadata with canonical URLs
-- ✅ ISR with hourly revalidation
 
 **Code Review Fixes:**
-- ✅ URL injection prevention (use validated city.slug)
+- ✅ URL injection prevention
 - ✅ Case-insensitive slug matching
-- ✅ Distance boundary edge case at 100mi
 - ✅ ARIA labels for distance badges
-
-**Refactoring (nice-to-haves):**
-- ✅ Extracted `StatCard` to shared component
-- ✅ Extracted `filterSprings` to shared utility
-- ✅ Moved seed-cities to `src/lib/data/`
-- ✅ Added canonical URLs to state and near pages
-
-**Database Migration:**
-- ✅ `002_extend_nearby_springs.sql` - Added lat, lng, photo_url to function
 
 **Files Created:**
 - `src/lib/data/seed-cities.ts`
 - `src/lib/data/cities.ts`
 - `src/app/near/[location]/page.tsx`
 - `src/components/springs/StatCard.tsx`
-- `src/lib/utils/spring-filters.ts`
-- `supabase/migrations/002_extend_nearby_springs.sql`
 
 ---
 
@@ -65,81 +102,60 @@ Status: Phase 3 - Activity Pairing Complete
 
 **Spring Detail Page (`/springs/[slug]`):**
 - ✅ Hero section with photo/gradient placeholder
-- ✅ Temperature and experience badges
 - ✅ Interactive MapLibre map with single marker
-- ✅ "Get Directions" button (Google Maps)
-- ✅ Info cards grid (access, parking, fees, crowds, season, etc.)
-- ✅ Safety warnings section with styled badges
-- ✅ Nearby springs section (5 closest with distance)
-- ✅ Dynamic SEO metadata
-- ✅ ISR with hourly revalidation
+- ✅ Info cards grid (access, parking, fees, etc.)
+- ✅ Nearby springs section (5 closest)
 
 **State Page (`/states/[state]`):**
 - ✅ Hero with state name and spring counts
-- ✅ Stats cards (hot/warm/cold breakdown)
 - ✅ URL-based filtering (StateFilters component)
 - ✅ Interactive SpringMap with all state springs
-- ✅ SpringGrid with filtered results
-- ✅ Empty state handling with clear filters
 
 **MapLibre Integration:**
-- ✅ `SingleSpringMap` - Detail page single marker
-- ✅ `SpringMap` - Multi-marker with auto-bounds fitting
-- ✅ Dynamic imports with SSR disabled
-- ✅ OpenStreetMap tiles
-- ✅ Color-coded markers (terracotta/moss/river)
-- ✅ Error boundaries with retry functionality
+- ✅ `SingleSpringMap` - Detail page
+- ✅ `SpringMap` - Multi-marker with auto-bounds
+- ✅ Error boundaries with retry
 
-**Security Fixes (from code review):**
+**Security Fixes:**
 - ✅ XSS prevention: `escapeHtml()` for popup content
-- ✅ Open redirect prevention: slug validation + Next.js router
-- ✅ Memory leak prevention: proper event listener cleanup
-- ✅ Type validation for URL filter params
-
-**Accessibility:**
-- ✅ `aria-pressed` and `aria-label` on filter buttons
-- ✅ `role="group"` for filter sections
-- ✅ Keyboard navigation (Enter/Space) for map markers
-- ✅ `role="application"` on map containers
-
-**Commit:** `ce8e073` - Add spring detail and state pages with MapLibre integration
+- ✅ Open redirect prevention: slug validation
+- ✅ Memory leak prevention: event listener cleanup
 
 ---
 
 ### December 19, 2025 - Day 1: Foundation
 
-**Project Structure Created:**
-- ✅ Memory bank initialized with core docs
-- ✅ CLAUDE.md configured for SoakMap
-- ✅ Subagents copied (6 agents)
-- ✅ Frontend design skill installed
-- ✅ Project brief documented from spec
-
-**Next.js Project:**
-- ✅ Initialized with TypeScript, Tailwind, App Router
-- ✅ Dependencies installed (Supabase, MapLibre, Zod, Lucide)
-- ✅ ESLint, Prettier, Playwright configured
+**Project Structure:**
+- ✅ Memory bank initialized
+- ✅ CLAUDE.md configured
+- ✅ Next.js project with TypeScript, Tailwind, App Router
 
 **Supabase Schema:**
 - ✅ 12 enums created
 - ✅ Springs table with PostGIS location
 - ✅ States table with counts
-- ✅ Indexes (spatial, text search, composite)
-- ✅ RLS policies
 - ✅ nearby_springs() function
-
-**UI Components:**
-- ✅ Button, Badge, Card
-- ✅ SpringCard, SpringGrid
-- ✅ Header, Footer
-- ✅ SearchHero, FilterToggles, FeaturedSprings
 
 **Data Pipeline:**
 - ✅ `01-import-gnis.ts` - USGS hot springs
 - ✅ `02-scrape-swimmingholes.ts` - Swimming holes
 - ✅ `04-enrich-springs.ts` - Tavily + gpt-4o-mini
 - ✅ `05-validate-data.ts` - Validation + state counts
-- ✅ `run-pipeline.ts` - Orchestrator
+
+---
+
+## Data Scripts Summary
+
+| Script | Source | Springs | Notes |
+|--------|--------|---------|-------|
+| `01-import-gnis.ts` | USGS GNIS | 550 | Authoritative names/coords |
+| `02-scrape-swimmingholes.ts` | swimmingholes.org | 1,116 | Sub-place parsing |
+| `03-scrape-idaho.ts` | idahohotsprings.com | 9 | Idaho focus |
+| `06-scrape-soakoregon.ts` | soakoregon.com | 32 | Oregon focus |
+| `07-import-pangaea.ts` | PANGAEA NOAA | 1,065 | Historical data |
+| `08-scrape-wikipedia.ts` | Wikipedia | 48 | Rich history |
+| `09-scrape-hotspringslocator.ts` | hotspringslocator.com | 53 | GPS + chemistry |
+| `10-scrape-tophotsprings.ts` | tophotsprings.com | 197 | 24 US states |
 
 ---
 
@@ -148,54 +164,16 @@ Status: Phase 3 - Activity Pairing Complete
 ### Database Schema
 - Core table: `springs` with 40+ fields
 - 12 enum types for controlled vocabulary
-- PostGIS for geographic queries (`nearby_springs()` function)
+- PostGIS for geographic queries
 - Warnings as array type
-- Indexes: spatial (GIST), text (pg_trgm), composite
 
 ### Frontend Components
 
-**Layout:**
-- `Header` - Logo, nav links, mobile menu
-- `Footer` - Links, copyright
-
-**UI:**
-- `Button` - 6 variants, 3 sizes
-- `Badge` - Temperature + experience badges
-- `Card` - Generic wrapper with hover lift
-
-**Springs:**
-- `SpringCard` - Photo, name, location, badges
-- `SpringGrid` - Responsive 1/2/3 column grid
-- `StateFilters` - URL-based type/experience toggles
-
-**Maps:**
-- `SingleSpringMap` - Detail page single marker
-- `SpringMap` - Multi-marker for state pages
-- `MapErrorBoundary` - Error handling with retry
-
-**Home:**
-- `SearchHero` - State dropdown, geolocation, quick filters
-- `FilterToggles` - Temperature + experience toggles
-- `FeaturedSprings` - 6-card grid
-
-### Data Scripts
-- `01-import-gnis.ts` - USGS GNIS hot springs import
-- `02-scrape-swimmingholes.ts` - Swimming holes scraper
-- `04-enrich-springs.ts` - Tavily + LLM enrichment
-- `05-validate-data.ts` - Zod validation + dedup
-- `run-pipeline.ts` - Pipeline orchestrator
-
----
-
-## Data Targets
-
-| Source | Count | Status |
-|--------|-------|--------|
-| USGS GNIS Hot Springs | ~1,600 | ✅ Script ready |
-| swimmingholes.org | ~1,400 | ✅ Script ready, tested with CA |
-| Tavily Discovery | ~500 | ⏳ Pending |
-| **Total Raw** | ~3,500 | ⏳ Pending full import |
-| **Launch Target** | 1,000 | ⏳ Pending |
+**Layout:** Header, Footer
+**UI:** Button, Badge, Card
+**Springs:** SpringCard, SpringGrid, StateFilters, StatCard
+**Maps:** SingleSpringMap, SpringMap, MapErrorBoundary
+**Home:** SearchHero, FilterToggles, FeaturedSprings
 
 ---
 

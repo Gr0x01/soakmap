@@ -3,18 +3,19 @@
  * Validate and clean spring data
  *
  * Usage:
- *   npx tsx scripts/05-validate-data.ts [--fix] [--delete-invalid]
+ *   npx tsx scripts/05-validate-data.ts [--fix] [--delete-invalid] [--fix-duplicates]
  *
  * The script:
  * 1. Fetches all springs from database
  * 2. Validates against Zod schema
  * 3. Reports issues (or fixes them with --fix)
- * 4. Identifies and reports duplicates
+ * 4. Identifies and reports duplicates (merges with --fix-duplicates)
  * 5. Updates state counts
  */
 
 import { supabase } from './lib/supabase';
 import { createLogger } from './lib/logger';
+import { findDuplicateGroups, mergeDuplicates } from './lib/dedup';
 import {
   springTypeEnum,
   experienceTypeEnum,
@@ -41,11 +42,6 @@ interface ValidationIssue {
   suggestedFix?: unknown;
 }
 
-interface DuplicateGroup {
-  name: string;
-  ids: string[];
-  states: string[];
-}
 
 async function fetchAllSprings() {
   const allSprings = [];
@@ -344,94 +340,6 @@ function validateSpring(spring: Record<string, unknown>): ValidationIssue[] {
   return issues;
 }
 
-function findDuplicates(springs: Record<string, unknown>[]): DuplicateGroup[] {
-  // Group by normalized name
-  const byName = new Map<string, Record<string, unknown>[]>();
-
-  for (const spring of springs) {
-    const name = (spring.name as string).toLowerCase().trim();
-    if (!byName.has(name)) {
-      byName.set(name, []);
-    }
-    byName.get(name)!.push(spring);
-  }
-
-  // Find groups with multiple entries (same name)
-  const duplicates: DuplicateGroup[] = [];
-
-  for (const [name, group] of byName) {
-    if (group.length > 1) {
-      duplicates.push({
-        name,
-        ids: group.map((s) => s.id as string),
-        states: group.map((s) => s.state as string),
-      });
-    }
-  }
-
-  // Grid-based proximity detection (O(n) instead of O(n²))
-  // Group springs into grid cells of ~1km (0.01 degrees)
-  const GRID_SIZE = 0.01; // ~1km
-  const grid = new Map<string, Record<string, unknown>[]>();
-
-  for (const spring of springs) {
-    const lat = spring.lat as number;
-    const lng = spring.lng as number;
-    if (typeof lat !== 'number' || typeof lng !== 'number') continue;
-
-    const cellKey = `${Math.floor(lat / GRID_SIZE)},${Math.floor(lng / GRID_SIZE)}`;
-    if (!grid.has(cellKey)) {
-      grid.set(cellKey, []);
-    }
-    grid.get(cellKey)!.push(spring);
-  }
-
-  // Find duplicates within same or adjacent cells
-  const coordDupes: DuplicateGroup[] = [];
-  const processedIds = new Set<string>();
-
-  for (const [cellKey, cellSprings] of grid) {
-    if (cellSprings.length <= 1) continue;
-
-    // Check all springs in this cell against each other
-    for (let i = 0; i < cellSprings.length; i++) {
-      const a = cellSprings[i];
-      const aId = a.id as string;
-      if (processedIds.has(aId)) continue;
-
-      const nearbyGroup: string[] = [aId];
-      const nearbyStates: string[] = [a.state as string];
-      const nearbyNames: string[] = [a.name as string];
-
-      for (let j = i + 1; j < cellSprings.length; j++) {
-        const b = cellSprings[j];
-        const bId = b.id as string;
-        if (processedIds.has(bId)) continue;
-
-        const latDiff = Math.abs((a.lat as number) - (b.lat as number));
-        const lngDiff = Math.abs((a.lng as number) - (b.lng as number));
-
-        if (latDiff < GRID_SIZE && lngDiff < GRID_SIZE) {
-          nearbyGroup.push(bId);
-          nearbyStates.push(b.state as string);
-          nearbyNames.push(b.name as string);
-          processedIds.add(bId);
-        }
-      }
-
-      if (nearbyGroup.length > 1) {
-        processedIds.add(aId);
-        coordDupes.push({
-          name: `Near: ${nearbyNames.slice(0, 2).join(', ')}${nearbyNames.length > 2 ? '...' : ''}`,
-          ids: nearbyGroup,
-          states: nearbyStates,
-        });
-      }
-    }
-  }
-
-  return [...duplicates, ...coordDupes];
-}
 
 async function updateStateCounts() {
   log.info('Updating state counts...');
@@ -484,10 +392,12 @@ async function main() {
   const args = process.argv.slice(2);
   const shouldFix = args.includes('--fix');
   const deleteInvalid = args.includes('--delete-invalid');
+  const fixDuplicates = args.includes('--fix-duplicates');
 
   log.info('Starting validation');
   if (shouldFix) log.warn('FIX MODE - will attempt to fix issues');
   if (deleteInvalid) log.warn('DELETE MODE - will delete invalid records');
+  if (fixDuplicates) log.warn('MERGE MODE - will merge and delete duplicates');
 
   // Fetch all springs
   log.info('Fetching springs...');
@@ -530,17 +440,29 @@ async function main() {
     log.success('No validation issues found!');
   }
 
-  // Find duplicates
+  // Find duplicates using dedup module (better algorithm)
   log.info('Checking for duplicates...');
-  const duplicates = findDuplicates(springs as Record<string, unknown>[]);
+  const duplicateGroups = await findDuplicateGroups();
 
-  if (duplicates.length > 0) {
-    log.warn(`Found ${duplicates.length} potential duplicate groups:`);
-    for (const dupe of duplicates.slice(0, 10)) {
-      log.info(`  "${dupe.name}" - ${dupe.ids.length} entries in states: ${dupe.states.join(', ')}`);
+  if (duplicateGroups.length > 0) {
+    const totalDupes = duplicateGroups.reduce((sum, g) => sum + g.deleteIds.length, 0);
+    log.warn(`Found ${duplicateGroups.length} duplicate groups (${totalDupes} springs to merge):`);
+    for (const group of duplicateGroups.slice(0, 10)) {
+      const keep = group.springs[0];
+      const others = group.springs.slice(1);
+      log.info(`  Keep: "${keep.name}" (score ${keep.score}) | Merge: ${others.map(s => `"${s.name}" (${s.score})`).join(', ')}`);
     }
-    if (duplicates.length > 10) {
-      log.info(`  ... and ${duplicates.length - 10} more`);
+    if (duplicateGroups.length > 10) {
+      log.info(`  ... and ${duplicateGroups.length - 10} more groups`);
+    }
+
+    // Merge duplicates if requested
+    if (fixDuplicates) {
+      log.info('Merging duplicates...');
+      const deleted = await mergeDuplicates(duplicateGroups);
+      log.success(`Merged ${deleted} duplicate springs`);
+    } else {
+      log.info('Run with --fix-duplicates to merge these');
     }
   } else {
     log.success('No duplicates found!');
@@ -574,7 +496,7 @@ async function main() {
   log.done('Validation complete');
   log.info(`  Total springs: ${springs.length}`);
   log.info(`  Validation issues: ${allIssues.length}`);
-  log.info(`  Duplicate groups: ${duplicates.length}`);
+  log.info(`  Duplicate groups: ${duplicateGroups.length}`);
 }
 
 main().catch((err) => {

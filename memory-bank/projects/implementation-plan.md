@@ -157,13 +157,18 @@ src/
 └── types/ (spring.ts, database.ts)
 
 scripts/
-├── lib/ (config, supabase, validation, auto-correct, cost-tracker, logger, rate-limiter)
+├── lib/ (config, supabase, validation, auto-correct, cost-tracker, logger, rate-limiter, dedup, utils)
 ├── data/ (gnis-springs.txt, state-codes.ts, discovery-queries.ts)
-├── 01-import-gnis.ts
-├── 02-scrape-swimmingholes.ts
-├── 03-discover-springs.ts
-├── 04-enrich-springs.ts
-├── 05-validate-data.ts
+├── 01-import-gnis.ts          # USGS GNIS hot springs (550)
+├── 02-scrape-swimmingholes.ts # swimmingholes.org with sub-places (1,116)
+├── 03-scrape-idaho.ts         # idahohotsprings.com (9)
+├── 04-enrich-springs.ts       # Tavily + gpt-4o-mini enrichment
+├── 05-validate-data.ts        # Validation + dedup merge
+├── 06-scrape-soakoregon.ts    # soakoregon.com (32)
+├── 07-import-pangaea.ts       # PANGAEA NOAA dataset (1,065)
+├── 08-scrape-wikipedia.ts     # Wikipedia list + articles (48)
+├── 09-scrape-hotspringslocator.ts # hotspringslocator.com (53)
+├── 10-scrape-tophotsprings.ts # tophotsprings.com 24 states (197)
 └── run-pipeline.ts
 
 tests/e2e/ (home.spec.ts, spring-detail.spec.ts, state-page.spec.ts)
@@ -275,18 +280,25 @@ export const SEED_CITIES = [
 
 ---
 
-## Day 4: Data Pipeline + SEO + Polish
+## Day 4-5: Data Pipeline + Import ✅ COMPLETED
 
-### 4.1 Data Sources (Validated Dec 19, 2024)
+### 4.1 Data Sources (Final Results - Dec 20, 2025)
 
-**Primary Sources (bulk import):**
-| Source | Springs | Has Coords | Notes |
-|--------|---------|------------|-------|
-| **swimmingholes.org** | ~1,400 | ✅ lat/lon in HTML tables | All 50 states, hot + cold, structured fields |
-| **USGS GNIS** | ~1,600 | ✅ official coords | Hot springs only, download as TSV |
-| **idahohotsprings.com** | ~200 | ✅ GPS table | Idaho only, easy HTML table |
+**All Sources Imported (8 total, 3,070 springs):**
 
-**Enrichment (per-spring):**
+| Source | Script | Springs | Notes |
+|--------|--------|---------|-------|
+| **swimmingholes.org** | `02-scrape-swimmingholes.ts` | 1,116 | Sub-place parsing, western US focus |
+| **PANGAEA NOAA** | `07-import-pangaea.ts` | 1,065 | Historical geothermal data (1980s) |
+| **USGS GNIS** | `01-import-gnis.ts` | 550 | Authoritative coordinates |
+| **tophotsprings.com** | `10-scrape-tophotsprings.ts` | 197 | 24 US states, excellent descriptions |
+| **hotspringslocator.com** | `09-scrape-hotspringslocator.ts` | 53 | 6 western states, GPS + chemistry |
+| **Wikipedia** | `08-scrape-wikipedia.ts` | 48 | Rich history and descriptions |
+| **soakoregon.com** | `06-scrape-soakoregon.ts` | 32 | Oregon-focused, detailed access |
+| **idahohotsprings.com** | `03-scrape-idaho.ts` | 9 | Idaho-focused |
+| **Total** | - | **3,070** | Clean, deduplicated |
+
+**Enrichment (pending):**
 - **Tavily** → Wikipedia, BLM.gov, travel blogs (tested: works well)
 - **gpt-4o-mini** → Extract structured JSON from snippets
 
@@ -296,24 +308,41 @@ export const SEED_CITIES = [
 - **Recent blog posts** - Tavily can surface trip reports for freshness
 - **Google Maps** - Only useful for resort-type springs with business listings
 
-### 4.2 Data Pipeline Scripts
+### 4.2 Data Pipeline Scripts ✅
 
-| Script | Source | Expected Count |
-|--------|--------|----------------|
-| `01-import-gnis.ts` | USGS GNIS hot springs | ~1,600 |
-| `02-scrape-swimmingholes.ts` | swimmingholes.org | ~1,400 |
-| `03-scrape-idaho.ts` | idahohotsprings.com GPS | ~200 |
-| `04-enrich-springs.ts` | Tavily + gpt-4o-mini | 1,000 enriched |
-| `05-validate-data.ts` | Zod validation + dedup | All |
+| Script | Source | Imported |
+|--------|--------|----------|
+| `01-import-gnis.ts` | USGS GNIS hot springs | 550 |
+| `02-scrape-swimmingholes.ts` | swimmingholes.org (with sub-place parsing) | 1,116 |
+| `03-scrape-idaho.ts` | idahohotsprings.com GPS | 9 |
+| `06-scrape-soakoregon.ts` | soakoregon.com | 32 |
+| `07-import-pangaea.ts` | PANGAEA NOAA dataset | 1,065 |
+| `08-scrape-wikipedia.ts` | Wikipedia list + articles | 48 |
+| `09-scrape-hotspringslocator.ts` | hotspringslocator.com (6 states) | 53 |
+| `10-scrape-tophotsprings.ts` | tophotsprings.com (24 states) | 197 |
+| `04-enrich-springs.ts` | Tavily + gpt-4o-mini | Pending |
+| `05-validate-data.ts` | Zod validation + dedup merge | ✅ |
 
-**Run order:**
+**Supporting libraries:**
+- `scripts/lib/dedup.ts` - Pre-insert dedup + merge utilities
+- `scripts/lib/config.ts` - Rate limits for all sources
+- `scripts/lib/logger.ts` - Consistent logging
+- `scripts/lib/utils.ts` - Slugify, chunk, sleep utilities
+
+**Run all scrapers:**
 ```bash
-npx tsx scripts/run-pipeline.ts gnis swimmingholes idaho  # Day 1-2
-npx tsx scripts/run-pipeline.ts enrich                     # Day 3-4
-npx tsx scripts/run-pipeline.ts validate                   # Day 4
+npx tsx scripts/01-import-gnis.ts
+npx tsx scripts/02-scrape-swimmingholes.ts
+npx tsx scripts/03-scrape-idaho.ts
+npx tsx scripts/06-scrape-soakoregon.ts
+npx tsx scripts/07-import-pangaea.ts
+npx tsx scripts/08-scrape-wikipedia.ts
+npx tsx scripts/09-scrape-hotspringslocator.ts
+npx tsx scripts/10-scrape-tophotsprings.ts
+npx tsx scripts/05-validate-data.ts --fix-duplicates
 ```
 
-**Estimated cost:** ~$15-30 total (Tavily ~$10-20, OpenAI ~$5-10)
+**Estimated cost for enrichment:** ~$15-30 total (Tavily ~$10-20, OpenAI ~$5-10)
 
 ### 4.3 swimmingholes.org Data Fields
 
@@ -412,13 +441,18 @@ npm install sharp  # Image processing
 - `src/lib/supabase/server.ts` - Server-side Supabase client
 - `src/lib/schemas/spring.ts` - Zod validation schemas
 
-### Data Pipeline
-- `scripts/01-import-gnis.ts` - USGS GNIS hot springs import
-- `scripts/02-scrape-swimmingholes.ts` - swimmingholes.org scraper (all 50 states)
-- `scripts/03-scrape-idaho.ts` - idahohotsprings.com GPS table
-- `scripts/04-enrich-springs.ts` - Tavily + gpt-4o-mini enrichment
-- `scripts/05-validate-data.ts` - Zod validation, dedup, QA flagging
-- `scripts/06-fetch-images.ts` - Download, optimize, upload to Supabase Storage
+### Data Pipeline (All Scrapers Complete - 3,070 Springs)
+- `scripts/01-import-gnis.ts` - USGS GNIS hot springs (550)
+- `scripts/02-scrape-swimmingholes.ts` - swimmingholes.org with sub-place parsing (1,116)
+- `scripts/03-scrape-idaho.ts` - idahohotsprings.com GPS table (9)
+- `scripts/06-scrape-soakoregon.ts` - soakoregon.com (32)
+- `scripts/07-import-pangaea.ts` - PANGAEA NOAA dataset (1,065)
+- `scripts/08-scrape-wikipedia.ts` - Wikipedia list + article fetching (48)
+- `scripts/09-scrape-hotspringslocator.ts` - hotspringslocator.com 6 states (53)
+- `scripts/10-scrape-tophotsprings.ts` - tophotsprings.com 24 states (197)
+- `scripts/04-enrich-springs.ts` - Tavily + gpt-4o-mini enrichment (pending)
+- `scripts/05-validate-data.ts` - Zod validation + duplicate merge
+- `scripts/lib/dedup.ts` - Pre-insert dedup + merge utilities
 - `scripts/lib/validation.ts` - Enum enforcement with Zod
 - `scripts/lib/auto-correct.ts` - Fix common LLM mistakes ("crowded" → "busy")
 - `scripts/run-pipeline.ts` - Pipeline orchestrator
@@ -438,6 +472,10 @@ npm install sharp  # Image processing
 4. **gpt-4o-mini** for extraction (cost-effective at ~$0.15/1M input tokens)
 5. **Organic/editorial aesthetic** with Space Grotesk + Newsreader fonts
 6. **URL-based filter state** for SEO and shareability
+7. **8 data sources** for comprehensive coverage (3,070 springs total)
+8. **Pre-insert deduplication** to prevent duplicate entries during import
+9. **Google Maps embed parsing** for coordinate extraction (tophotsprings.com)
+10. **State bounds validation** to catch coordinate errors
 
 ---
 
