@@ -138,10 +138,6 @@ export function SearchHeroClient({ stats, states }: SearchHeroClientProps) {
                 </div>
                 <div className="text-sm text-bark/50 mt-1 font-body">States</div>
               </div>
-              <div>
-                <div className="font-display text-4xl md:text-5xl font-bold text-moss">3</div>
-                <div className="text-sm text-bark/50 mt-1 font-body">Types</div>
-              </div>
             </div>
           </div>
 
