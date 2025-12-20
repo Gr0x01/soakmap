@@ -1,96 +1,134 @@
 import Link from 'next/link';
-import { MapPin } from 'lucide-react';
+import { MapPin, Footprints, DollarSign, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SpringTypeBadge, ExperienceTypeBadge } from '@/components/ui/Badge';
-import type { SpringSummary } from '@/types/spring';
+import type { SpringSummary, AccessDifficulty, ParkingType, FeeType } from '@/types/spring';
+
+// =============================================================================
+// Formatting Helpers
+// =============================================================================
+
+const accessLabels: Record<AccessDifficulty, string> = {
+  drive_up: 'Drive up',
+  short_walk: 'Short walk',
+  moderate_hike: 'Hike',
+  difficult_hike: 'Long hike',
+};
+
+const feeLabels: Record<FeeType, string> = {
+  free: 'Free',
+  paid: 'Paid',
+  donation: 'Donation',
+  unknown: '',
+};
+
+function formatTemp(tempF: number | null, type: string): string {
+  if (tempF) return `${Math.round(tempF)}°`;
+  return type === 'hot' ? 'Hot' : type === 'warm' ? 'Warm' : 'Cold';
+}
+
+// =============================================================================
+// SpringCard Component - Compact, Info-Dense Editorial Design
+// =============================================================================
 
 interface SpringCardProps {
   spring: SpringSummary;
   className?: string;
-  /** Optional distance in miles (shown as badge when provided) */
   distance?: number;
 }
 
 export function SpringCard({ spring, className, distance }: SpringCardProps) {
+  const hasAccess = spring.access_difficulty && spring.access_difficulty !== 'drive_up';
+  const hasFee = spring.fee_type && spring.fee_type !== 'unknown';
+  const hasParking = spring.parking && spring.parking !== 'ample';
+
   return (
     <Link
       href={`/springs/${spring.slug}`}
       className={cn(
-        'group block bg-cream rounded-xl shadow-soft',
-        'hover-lift transition-all duration-300',
-        'overflow-hidden border border-forest/5',
+        'group block',
+        'bg-cream border border-forest/8 rounded-lg',
+        'hover:border-forest/20 hover:shadow-md',
+        'transition-all duration-200',
         className
       )}
     >
-      {/* Photo area or gradient placeholder */}
-      <div
-        className={cn(
-          'aspect-[4/3] relative overflow-hidden',
-          'bg-gradient-to-br',
-          {
-            'from-terracotta/10 via-terracotta/5 to-sand/20': spring.spring_type === 'hot',
-            'from-moss/10 via-moss/5 to-sand/20': spring.spring_type === 'warm',
-            'from-river/10 via-river/5 to-sand/20': spring.spring_type === 'cold',
-          }
-        )}
-      >
-        {spring.photo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={spring.photo_url}
-            alt={spring.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          // Decorative organic shape placeholder
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className={cn(
-                'w-32 h-32 rounded-full blur-3xl opacity-40',
-                {
-                  'bg-terracotta': spring.spring_type === 'hot',
-                  'bg-moss': spring.spring_type === 'warm',
-                  'bg-river': spring.spring_type === 'cold',
-                }
-              )}
-            />
-          </div>
-        )}
-
-        {/* Badges overlay */}
-        <div className="absolute top-3 left-3 flex gap-2">
-          <SpringTypeBadge type={spring.spring_type} />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-5">
-        <h3 className="font-display text-lg font-semibold text-forest leading-tight mb-2 group-hover:text-terracotta transition-colors">
-          {spring.name}
-        </h3>
-
-        <div className="flex items-center gap-1.5 text-bark/60 text-sm mb-3 font-body">
-          <MapPin className="w-3.5 h-3.5" />
-          <span>{spring.state}</span>
-          {distance !== undefined && (
-            <>
-              <span className="text-bark/30" aria-hidden="true">·</span>
-              <span aria-label={`${Math.round(distance)} miles away`}>
-                {Math.round(distance)} mi
-              </span>
-            </>
+      {/* Main content row */}
+      <div className="flex gap-4 p-4">
+        {/* Temperature display - context, not competing */}
+        <div
+          className={cn(
+            'flex-shrink-0 w-14 h-14 rounded-md flex flex-col items-center justify-center',
+            'font-display tracking-tight',
+            {
+              'bg-terracotta/10 text-terracotta': spring.spring_type === 'hot',
+              'bg-moss/10 text-moss': spring.spring_type === 'warm',
+              'bg-river/10 text-river': spring.spring_type === 'cold',
+            }
           )}
+        >
+          <span className="text-xl font-semibold leading-none">
+            {spring.temp_f ? Math.round(spring.temp_f) : '—'}
+          </span>
+          <span className="text-[9px] font-medium uppercase tracking-wider opacity-60 mt-0.5">
+            {spring.temp_f ? '°F' : spring.spring_type}
+          </span>
         </div>
 
-        <div className="flex gap-2">
-          <ExperienceTypeBadge type={spring.experience_type} />
+        {/* Text content */}
+        <div className="flex-1 min-w-0">
+          {/* Name - THE focal point */}
+          <h3 className="font-display text-base font-bold text-forest leading-snug line-clamp-2 group-hover:text-terracotta transition-colors">
+            {spring.name}
+          </h3>
+
+          {/* Location + Experience type - secondary info, same line */}
+          <div className="flex items-center gap-1.5 text-bark/50 text-sm font-body mt-1 mb-2">
+            <MapPin className="w-3 h-3 flex-shrink-0" />
+            <span>{spring.state}</span>
+            {distance !== undefined && (
+              <>
+                <span>·</span>
+                <span>{Math.round(distance)} mi</span>
+              </>
+            )}
+            <span>·</span>
+            <span className="capitalize">{spring.experience_type}</span>
+          </div>
+
+          {/* Practical info chips */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {hasAccess && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-bark/50 bg-stone/80 px-1.5 py-0.5 rounded font-body">
+                <Footprints className="w-3 h-3" />
+                {accessLabels[spring.access_difficulty!]}
+              </span>
+            )}
+            {hasFee && (
+              <span className={cn(
+                'inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded font-body',
+                spring.fee_type === 'free' ? 'text-moss/70 bg-moss/10' : 'text-bark/50 bg-stone/80'
+              )}>
+                <DollarSign className="w-3 h-3" />
+                {feeLabels[spring.fee_type!]}
+              </span>
+            )}
+            {hasParking && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-bark/50 bg-stone/80 px-1.5 py-0.5 rounded font-body">
+                <Car className="w-3 h-3" />
+                {spring.parking === 'very_limited' ? 'Limited' : spring.parking}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>
   );
 }
 
-// Grid wrapper for multiple cards
+// =============================================================================
+// SpringGrid Component
+// =============================================================================
+
 interface SpringGridProps {
   springs: SpringSummary[];
   className?: string;
@@ -100,7 +138,7 @@ export function SpringGrid({ springs, className }: SpringGridProps) {
   return (
     <div
       className={cn(
-        'grid gap-6',
+        'grid gap-3',
         'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
         className
       )}

@@ -61,6 +61,10 @@ export async function getSprings(filters?: SpringFilters): Promise<SpringSummary
     spring_type: s.spring_type,
     experience_type: s.experience_type,
     photo_url: s.photo_url,
+    temp_f: s.temp_f ?? null,
+    access_difficulty: s.access_difficulty ?? null,
+    parking: s.parking ?? null,
+    fee_type: s.fee_type ?? null,
   }));
 }
 
@@ -89,6 +93,10 @@ export async function getFeaturedSprings(limit = 6): Promise<SpringSummary[]> {
     spring_type: s.spring_type,
     experience_type: s.experience_type,
     photo_url: s.photo_url,
+    temp_f: s.temp_f ?? null,
+    access_difficulty: s.access_difficulty ?? null,
+    parking: s.parking ?? null,
+    fee_type: s.fee_type ?? null,
   }));
 }
 

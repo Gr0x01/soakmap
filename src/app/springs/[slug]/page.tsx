@@ -25,6 +25,7 @@ import { generateSpringSchema, generateBreadcrumbSchema, safeJsonLd } from '@/li
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringTypeBadge, ExperienceTypeBadge, Badge } from '@/components/ui/Badge';
+import { MarkdownContent } from '@/components/ui/MarkdownContent';
 import { SpringCard } from '@/components/springs/SpringCard';
 import { SingleSpringMap } from '@/components/maps';
 import type { Spring, NearbySpring, SpringSummary } from '@/types/spring';
@@ -152,11 +153,15 @@ function nearbyToSummary(nearby: NearbySpring): SpringSummary {
     name: nearby.name,
     slug: nearby.slug,
     state: nearby.state,
-    lat: 0, // Not needed for card display
-    lng: 0,
+    lat: nearby.lat,
+    lng: nearby.lng,
     spring_type: nearby.spring_type,
     experience_type: nearby.experience_type,
-    photo_url: null,
+    photo_url: nearby.photo_url,
+    temp_f: nearby.temp_f ?? null,
+    access_difficulty: nearby.access_difficulty ?? null,
+    parking: nearby.parking ?? null,
+    fee_type: nearby.fee_type ?? null,
   };
 }
 
@@ -294,9 +299,9 @@ export default async function SpringDetailPage({
               </div>
 
               {/* Description */}
-              <p className="text-lg text-bark/80 font-body leading-relaxed">
-                {spring.description}
-              </p>
+              {spring.description && (
+                <MarkdownContent content={spring.description} />
+              )}
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
@@ -436,14 +441,13 @@ export default async function SpringDetailPage({
               </Link>
             </div>
 
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {nearbySprings.map((nearby) => (
-                <div key={nearby.id} className="relative">
-                  <SpringCard spring={nearbyToSummary(nearby)} />
-                  <div className="absolute top-3 right-3 bg-cream/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-display font-medium text-bark/70 border border-forest/10">
-                    {nearby.distance_miles.toFixed(1)} mi
-                  </div>
-                </div>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {nearbySprings.slice(0, 6).map((nearby) => (
+                <SpringCard
+                  key={nearby.id}
+                  spring={nearbyToSummary(nearby)}
+                  distance={nearby.distance_miles}
+                />
               ))}
             </div>
           </section>

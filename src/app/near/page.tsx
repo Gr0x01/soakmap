@@ -296,6 +296,10 @@ export default async function NearMePage({
                           spring_type: spring.spring_type,
                           experience_type: spring.experience_type,
                           photo_url: spring.photo_url,
+                          temp_f: spring.temp_f ?? null,
+                          access_difficulty: spring.access_difficulty ?? null,
+                          parking: spring.parking ?? null,
+                          fee_type: spring.fee_type ?? null,
                         }}
                         distance={spring.distance_miles}
                       />

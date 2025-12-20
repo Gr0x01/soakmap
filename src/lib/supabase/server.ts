@@ -64,7 +64,7 @@ export const db = {
 
     let query = supabase
       .from('springs')
-      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url')
+      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
       .order('name');
 
     if (filters?.state) {
@@ -191,7 +191,7 @@ export const db = {
 
     const { data, error } = await supabase
       .from('springs')
-      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url')
+      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
       .eq('state', stateCode.toUpperCase())
       .order('name');
 
@@ -242,7 +242,7 @@ export const db = {
     // First try: springs with photos and high confidence
     let { data, error } = await supabase
       .from('springs')
-      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url')
+      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
       .not('photo_url', 'is', null)
       .eq('confidence', 'high')
       .limit(safeLimit);
@@ -256,7 +256,7 @@ export const db = {
     if (!data || data.length < safeLimit) {
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('springs')
-        .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url')
+        .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
         .order('name')
         .limit(safeLimit);
 

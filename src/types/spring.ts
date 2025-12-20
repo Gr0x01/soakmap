@@ -103,6 +103,11 @@ export interface SpringSummary {
   spring_type: SpringType;
   experience_type: ExperienceType;
   photo_url: string | null;
+  // Practical info for card display
+  temp_f: number | null;
+  access_difficulty: AccessDifficulty | null;
+  parking: ParkingType | null;
+  fee_type: FeeType | null;
 }
 
 // State type
@@ -127,6 +132,11 @@ export interface NearbySpring {
   lat: number;
   lng: number;
   photo_url: string | null;
+  // Practical info for card display
+  temp_f: number | null;
+  access_difficulty: AccessDifficulty | null;
+  parking: ParkingType | null;
+  fee_type: FeeType | null;
 }
 
 // Filter parameters
