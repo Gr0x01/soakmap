@@ -3,16 +3,17 @@
  * Enrich springs with Tavily search + gpt-4o-mini extraction
  *
  * Usage:
- *   npx tsx scripts/04-enrich-springs.ts [--dry-run] [--limit N] [--state XX]
+ *   npx tsx scripts/04-enrich-springs.ts [--dry-run] [--limit N] [--state XX] [--concurrency N]
  *
  * The script:
  * 1. Fetches springs with enrichment_status = 'pending'
- * 2. For each spring, searches Tavily for additional info
+ * 2. For each spring (in parallel), searches Tavily for additional info
  * 3. Extracts structured data using gpt-4o-mini
- * 4. Updates the spring record
+ * 4. Batch updates spring records
  */
 
 import OpenAI from 'openai';
+import * as crypto from 'crypto';
 import { supabase } from './lib/supabase';
 import { createLogger } from './lib/logger';
 import { sleep } from './lib/utils';
@@ -24,6 +25,11 @@ const log = createLogger('Enrich');
 const FETCH_TIMEOUT_MS = 30000; // 30 seconds
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 1000;
+const DEFAULT_CONCURRENCY = 50; // Process 50 springs at once
+
+// Cache stats
+let cacheHits = 0;
+let cacheMisses = 0;
 
 // Initialize OpenAI (lazy - only when needed)
 let openai: OpenAI | null = null;
@@ -57,6 +63,22 @@ interface EnrichmentData {
   description?: string;
   experience_type?: 'resort' | 'primitive' | 'hybrid';
   confidence?: 'high' | 'medium' | 'low';
+}
+
+interface Spring {
+  id: string;
+  name: string;
+  state: string;
+  description: string | null;
+  spring_type: string;
+  experience_type: string;
+}
+
+interface EnrichmentResult {
+  springId: string;
+  springName: string;
+  data: EnrichmentData | null;
+  error?: string;
 }
 
 const EXTRACTION_PROMPT = `You are a data extraction assistant for a natural springs directory. Extract structured data from the provided text snippets about a spring/swimming hole.
@@ -107,15 +129,66 @@ Return a JSON object with these fields (use null if unknown):
 Return ONLY the JSON object, no markdown or explanation.`;
 
 /**
- * Search Tavily for spring information with timeout and validation
+ * Generate hash for cache key (full SHA256, 64 chars)
+ */
+function hashQuery(query: string): string {
+  return crypto.createHash('sha256').update(query).digest('hex');
+}
+
+/**
+ * Check cache for Tavily results
+ */
+async function getCachedTavily(query: string): Promise<string[] | null> {
+  const queryHash = hashQuery(query);
+
+  const { data, error } = await supabase
+    .from('tavily_cache')
+    .select('results')
+    .eq('query_hash', queryHash)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.results as string[];
+}
+
+/**
+ * Store Tavily results in cache
+ */
+async function cacheTavilyResults(query: string, results: string[]): Promise<void> {
+  const queryHash = hashQuery(query);
+
+  await supabase
+    .from('tavily_cache')
+    .upsert({
+      query_hash: queryHash,
+      query,
+      results,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+    }, { onConflict: 'query_hash' });
+}
+
+/**
+ * Search Tavily for spring information with caching
  */
 async function searchTavily(springName: string, state: string): Promise<string[]> {
   if (!config.tavily.apiKey) {
-    log.warn('No Tavily API key, skipping search');
     return [];
   }
 
   const query = `"${springName}" ${state} hot spring swimming hole`;
+
+  // Check cache first
+  const cached = await getCachedTavily(query);
+  if (cached !== null) {
+    cacheHits++;
+    return cached;
+  }
+  cacheMisses++;
 
   // Fetch with timeout
   const controller = new AbortController();
@@ -131,13 +204,12 @@ async function searchTavily(springName: string, state: string): Promise<string[]
       body: JSON.stringify({
         api_key: config.tavily.apiKey,
         query,
-        search_depth: 'basic',
+        search_depth: 'advanced',
         max_results: 5,
         include_answer: false,
-        include_raw_content: false,
+        include_raw_content: false, // Content field is enough, raw is too large
       }),
     });
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Tavily error: ${response.status}`);
@@ -147,27 +219,26 @@ async function searchTavily(springName: string, state: string): Promise<string[]
 
     // Validate response structure
     if (!data || typeof data !== 'object') {
-      log.warn('Unexpected Tavily response format: not an object');
       return [];
     }
 
     const tavilyResponse = data as TavilyResponse;
     if (!tavilyResponse.results || !Array.isArray(tavilyResponse.results)) {
-      log.warn('Unexpected Tavily response format: no results array');
       return [];
     }
 
-    return tavilyResponse.results
+    const results = tavilyResponse.results
       .filter((r) => r && r.title && r.content)
       .map((r) => `${r.title}: ${r.content}`);
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err instanceof Error && err.name === 'AbortError') {
-      log.error('Tavily search timed out');
-    } else {
-      log.error(`Tavily search failed: ${err}`);
-    }
+
+    // Cache the results
+    await cacheTavilyResults(query, results);
+
+    return results;
+  } catch {
     return [];
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -181,7 +252,6 @@ async function extractWithLLM(
   snippets: string[]
 ): Promise<EnrichmentData | null> {
   if (!config.openai.apiKey) {
-    log.warn('No OpenAI API key, skipping extraction');
     return null;
   }
 
@@ -213,12 +283,12 @@ async function extractWithLLM(
       try {
         const parsed = JSON.parse(content);
         if (typeof parsed !== 'object' || parsed === null) {
-          log.warn('Invalid enrichment data structure: not an object');
+          log.warn(`Invalid LLM response for ${springName}: not an object`);
           return null;
         }
         return parsed as EnrichmentData;
-      } catch (parseErr) {
-        log.error(`Failed to parse LLM JSON response: ${content.substring(0, 100)}`);
+      } catch {
+        log.warn(`Failed to parse LLM JSON for ${springName}`);
         return null;
       }
     } catch (err) {
@@ -234,7 +304,9 @@ async function extractWithLLM(
         continue;
       }
 
-      log.error(`LLM extraction failed: ${err}`);
+      // Log non-retryable errors
+      const errMsg = err instanceof Error ? err.message : 'Unknown error';
+      log.error(`LLM extraction failed for ${springName}: ${errMsg}`);
       return null;
     }
   }
@@ -262,28 +334,24 @@ function autoCorrect(data: EnrichmentData): EnrichmentData {
 
   const result = { ...data };
 
-  // Fix crowd_level with logging
+  // Fix crowd_level
   if (result.crowd_level && corrections[result.crowd_level]) {
-    log.debug(`Auto-correcting crowd_level: ${result.crowd_level} -> ${corrections[result.crowd_level]}`);
     result.crowd_level = corrections[result.crowd_level] as EnrichmentData['crowd_level'];
   }
 
   // Validate enums
   const validCrowdLevels = ['empty', 'quiet', 'moderate', 'busy', 'packed'];
   if (result.crowd_level && !validCrowdLevels.includes(result.crowd_level)) {
-    log.debug(`Invalid crowd_level "${result.crowd_level}", setting to null`);
     result.crowd_level = null;
   }
 
   const validAccess = ['drive_up', 'short_walk', 'moderate_hike', 'difficult_hike'];
   if (result.access_difficulty && !validAccess.includes(result.access_difficulty)) {
-    log.debug(`Invalid access_difficulty "${result.access_difficulty}", setting to null`);
     result.access_difficulty = null;
   }
 
   const validParking = ['ample', 'limited', 'very_limited', 'roadside', 'trailhead'];
   if (result.parking && !validParking.includes(result.parking)) {
-    log.debug(`Invalid parking "${result.parking}", setting to null`);
     result.parking = null;
   }
 
@@ -317,27 +385,31 @@ function autoCorrect(data: EnrichmentData): EnrichmentData {
     result.confidence = 'low';
   }
 
-  // Validate numeric ranges
+  // Coerce and validate numeric fields (LLM sometimes returns strings or floats)
   if (result.temp_f !== null && result.temp_f !== undefined) {
-    if (result.temp_f < 32 || result.temp_f > 212) {
+    result.temp_f = Math.round(Number(result.temp_f));
+    if (isNaN(result.temp_f) || result.temp_f < 32 || result.temp_f > 212) {
       result.temp_f = null;
     }
   }
 
   if (result.time_from_parking_min !== null && result.time_from_parking_min !== undefined) {
-    if (result.time_from_parking_min < 0 || result.time_from_parking_min > 480) {
+    result.time_from_parking_min = Math.round(Number(result.time_from_parking_min));
+    if (isNaN(result.time_from_parking_min) || result.time_from_parking_min < 0 || result.time_from_parking_min > 480) {
       result.time_from_parking_min = null;
     }
   }
 
   if (result.fee_amount_usd !== null && result.fee_amount_usd !== undefined) {
-    if (result.fee_amount_usd < 0 || result.fee_amount_usd > 500) {
+    result.fee_amount_usd = Math.round(Number(result.fee_amount_usd) * 100) / 100; // Keep 2 decimals for currency
+    if (isNaN(result.fee_amount_usd) || result.fee_amount_usd < 0 || result.fee_amount_usd > 500) {
       result.fee_amount_usd = null;
     }
   }
 
   if (result.pool_count !== null && result.pool_count !== undefined) {
-    if (result.pool_count < 1 || result.pool_count > 50) {
+    result.pool_count = Math.round(Number(result.pool_count));
+    if (isNaN(result.pool_count) || result.pool_count < 1 || result.pool_count > 50) {
       result.pool_count = null;
     }
   }
@@ -345,17 +417,195 @@ function autoCorrect(data: EnrichmentData): EnrichmentData {
   return result;
 }
 
+/**
+ * Enrich a single spring (Tavily + LLM)
+ */
+async function enrichSpring(spring: Spring): Promise<EnrichmentResult> {
+  try {
+    // Search Tavily and extract with LLM in sequence (LLM needs Tavily results)
+    const snippets = await searchTavily(spring.name, spring.state);
+
+    let enrichmentData = await extractWithLLM(
+      spring.name,
+      spring.state,
+      spring.description || '',
+      snippets
+    );
+
+    if (enrichmentData) {
+      enrichmentData = autoCorrect(enrichmentData);
+    }
+
+    return {
+      springId: spring.id,
+      springName: spring.name,
+      data: enrichmentData,
+    };
+  } catch (err) {
+    return {
+      springId: spring.id,
+      springName: spring.name,
+      data: null,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Build update data from enrichment result
+ */
+function buildUpdateData(
+  spring: Spring,
+  enrichmentData: EnrichmentData
+): Record<string, unknown> {
+  const updateData: Record<string, unknown> = {
+    enrichment_status: 'enriched',
+    updated_at: new Date().toISOString(),
+  };
+
+  // Only update non-null fields
+  if (enrichmentData.temp_f !== null && enrichmentData.temp_f !== undefined) {
+    updateData.temp_f = enrichmentData.temp_f;
+  }
+  if (enrichmentData.access_difficulty) {
+    updateData.access_difficulty = enrichmentData.access_difficulty;
+  }
+  if (enrichmentData.parking) {
+    updateData.parking = enrichmentData.parking;
+  }
+  if (enrichmentData.time_from_parking_min !== null && enrichmentData.time_from_parking_min !== undefined) {
+    updateData.time_from_parking_min = enrichmentData.time_from_parking_min;
+  }
+  if (enrichmentData.cell_service) {
+    updateData.cell_service = enrichmentData.cell_service;
+  }
+  if (enrichmentData.fee_type) {
+    updateData.fee_type = enrichmentData.fee_type;
+  }
+  if (enrichmentData.fee_amount_usd !== null && enrichmentData.fee_amount_usd !== undefined) {
+    updateData.fee_amount_usd = enrichmentData.fee_amount_usd;
+  }
+  if (enrichmentData.crowd_level) {
+    updateData.crowd_level = enrichmentData.crowd_level;
+  }
+  if (enrichmentData.best_season) {
+    updateData.best_season = enrichmentData.best_season;
+  }
+  if (enrichmentData.clothing_optional) {
+    updateData.clothing_optional = enrichmentData.clothing_optional;
+  }
+  if (enrichmentData.pool_count !== null && enrichmentData.pool_count !== undefined) {
+    updateData.pool_count = enrichmentData.pool_count;
+  }
+  if (enrichmentData.experience_type) {
+    updateData.experience_type = enrichmentData.experience_type;
+  }
+  if (enrichmentData.description && enrichmentData.description.length > (spring.description?.length || 0)) {
+    updateData.description = enrichmentData.description;
+  }
+  if (enrichmentData.confidence) {
+    updateData.confidence = enrichmentData.confidence;
+  }
+
+  return updateData;
+}
+
+/**
+ * Process a batch of springs in parallel
+ */
+async function processBatch(
+  springs: Spring[],
+  concurrency: number,
+  dryRun: boolean,
+  progressOffset: number,
+  totalSprings: number
+): Promise<{ enriched: number; errors: number }> {
+  let enriched = 0;
+  let errors = 0;
+
+  // Process in chunks of `concurrency`
+  for (let i = 0; i < springs.length; i += concurrency) {
+    const chunk = springs.slice(i, i + concurrency);
+    const chunkStart = progressOffset + i;
+
+    log.info(`Processing ${chunkStart + 1}-${chunkStart + chunk.length} of ${totalSprings}...`);
+
+    // Enrich all springs in chunk in parallel
+    const results = await Promise.all(chunk.map(enrichSpring));
+
+    // Rate limit between batches to avoid API throttling (except last batch)
+    if (i + concurrency < springs.length) {
+      await sleep(200);
+    }
+
+    // Collect successful results for batch update
+    const successfulUpdates: Array<{ id: string; data: Record<string, unknown> }> = [];
+    const springMap = new Map(chunk.map((s) => [s.id, s]));
+
+    for (const result of results) {
+      if (result.error) {
+        log.error(`Error enriching ${result.springName}: ${result.error}`);
+        errors++;
+      } else if (!result.data) {
+        errors++;
+      } else {
+        const spring = springMap.get(result.springId)!;
+        const updateData = buildUpdateData(spring, result.data);
+        successfulUpdates.push({ id: result.springId, data: updateData });
+      }
+    }
+
+    // Batch update to DB (or log in dry run)
+    if (dryRun) {
+      for (const update of successfulUpdates) {
+        const spring = springMap.get(update.id)!;
+        log.info(`[DRY RUN] Would update ${spring.name}`);
+      }
+      enriched += successfulUpdates.length;
+    } else {
+      // Update springs with limited concurrency to avoid overwhelming the database
+      const DB_CONCURRENCY = 10;
+      for (let j = 0; j < successfulUpdates.length; j += DB_CONCURRENCY) {
+        const updateChunk = successfulUpdates.slice(j, j + DB_CONCURRENCY);
+        const updatePromises = updateChunk.map(async (update) => {
+          const { error: updateError } = await supabase
+            .from('springs')
+            .update(update.data)
+            .eq('id', update.id);
+
+          if (updateError) {
+            const spring = springMap.get(update.id)!;
+            log.error(`Failed to update ${spring.name}: ${updateError.message}`);
+            return false;
+          }
+          return true;
+        });
+
+        const updateResults = await Promise.all(updatePromises);
+        enriched += updateResults.filter(Boolean).length;
+        errors += updateResults.filter((r) => !r).length;
+      }
+    }
+
+    log.info(`Batch complete: ${enriched} enriched, ${errors} errors so far`);
+  }
+
+  return { enriched, errors };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const limitIdx = args.indexOf('--limit');
-  const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : 50;
+  const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : 100;
   const stateIdx = args.indexOf('--state');
   const stateFilter = stateIdx >= 0 ? args[stateIdx + 1]?.toUpperCase() : undefined;
+  const concurrencyIdx = args.indexOf('--concurrency');
+  const concurrency = concurrencyIdx >= 0 ? parseInt(args[concurrencyIdx + 1], 10) : DEFAULT_CONCURRENCY;
 
-  log.info('Starting enrichment');
+  log.info('Starting parallel enrichment');
   if (dryRun) log.warn('DRY RUN MODE - no data will be updated');
-  log.info(`Processing up to ${limit} springs`);
+  log.info(`Processing up to ${limit} springs with concurrency ${concurrency}`);
   if (stateFilter) log.info(`Filtering by state: ${stateFilter}`);
 
   // Check API keys
@@ -392,110 +642,18 @@ async function main() {
 
   log.info(`Found ${springs.length} springs to enrich`);
 
-  let enriched = 0;
-  let errors = 0;
+  const startTime = Date.now();
+  const { enriched, errors } = await processBatch(
+    springs as Spring[],
+    concurrency,
+    dryRun,
+    0,
+    springs.length
+  );
 
-  for (let i = 0; i < springs.length; i++) {
-    const spring = springs[i];
-    log.progress(i + 1, springs.length, `Enriching: ${spring.name}`);
-
-    try {
-      // Search for additional info
-      const snippets = await searchTavily(spring.name, spring.state);
-      await sleep(config.rateLimit.tavily);
-
-      // Extract structured data
-      let enrichmentData = await extractWithLLM(
-        spring.name,
-        spring.state,
-        spring.description || '',
-        snippets
-      );
-      await sleep(config.rateLimit.openai);
-
-      if (!enrichmentData) {
-        log.warn(`No enrichment data for ${spring.name}`);
-        errors++;
-        continue;
-      }
-
-      // Apply auto-corrections
-      enrichmentData = autoCorrect(enrichmentData);
-
-      if (dryRun) {
-        log.info(`[DRY RUN] Would update ${spring.name}:`, enrichmentData);
-        enriched++;
-        continue;
-      }
-
-      // Update spring record
-      const updateData: Record<string, unknown> = {
-        enrichment_status: 'enriched',
-        updated_at: new Date().toISOString(),
-      };
-
-      // Only update non-null fields
-      if (enrichmentData.temp_f !== null && enrichmentData.temp_f !== undefined) {
-        updateData.temp_f = enrichmentData.temp_f;
-      }
-      if (enrichmentData.access_difficulty) {
-        updateData.access_difficulty = enrichmentData.access_difficulty;
-      }
-      if (enrichmentData.parking) {
-        updateData.parking = enrichmentData.parking;
-      }
-      if (enrichmentData.time_from_parking_min !== null && enrichmentData.time_from_parking_min !== undefined) {
-        updateData.time_from_parking_min = enrichmentData.time_from_parking_min;
-      }
-      if (enrichmentData.cell_service) {
-        updateData.cell_service = enrichmentData.cell_service;
-      }
-      if (enrichmentData.fee_type) {
-        updateData.fee_type = enrichmentData.fee_type;
-      }
-      if (enrichmentData.fee_amount_usd !== null && enrichmentData.fee_amount_usd !== undefined) {
-        updateData.fee_amount_usd = enrichmentData.fee_amount_usd;
-      }
-      if (enrichmentData.crowd_level) {
-        updateData.crowd_level = enrichmentData.crowd_level;
-      }
-      if (enrichmentData.best_season) {
-        updateData.best_season = enrichmentData.best_season;
-      }
-      if (enrichmentData.clothing_optional) {
-        updateData.clothing_optional = enrichmentData.clothing_optional;
-      }
-      if (enrichmentData.pool_count !== null && enrichmentData.pool_count !== undefined) {
-        updateData.pool_count = enrichmentData.pool_count;
-      }
-      if (enrichmentData.experience_type) {
-        updateData.experience_type = enrichmentData.experience_type;
-      }
-      if (enrichmentData.description && enrichmentData.description.length > (spring.description?.length || 0)) {
-        updateData.description = enrichmentData.description;
-      }
-      if (enrichmentData.confidence) {
-        updateData.confidence = enrichmentData.confidence;
-      }
-
-      const { error: updateError } = await supabase
-        .from('springs')
-        .update(updateData)
-        .eq('id', spring.id);
-
-      if (updateError) {
-        log.error(`Failed to update ${spring.name}: ${updateError.message}`);
-        errors++;
-      } else {
-        enriched++;
-      }
-    } catch (err) {
-      log.error(`Error enriching ${spring.name}: ${err}`);
-      errors++;
-    }
-  }
-
-  log.done(`Enriched ${enriched} springs (${errors} errors)`);
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log.done(`Enriched ${enriched} springs (${errors} errors) in ${elapsed}s`);
+  log.info(`Tavily cache: ${cacheHits} hits, ${cacheMisses} misses (${((cacheHits / (cacheHits + cacheMisses || 1)) * 100).toFixed(0)}% hit rate)`);
 }
 
 main().catch((err) => {

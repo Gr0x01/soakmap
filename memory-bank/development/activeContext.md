@@ -1,16 +1,16 @@
 ---
 title: Active Development Context
 created: 2025-12-19
-last-updated: 2025-12-20
+last-updated: 2025-12-21
 maintainer: Claude
 status: Active
 ---
 
 # Active Development Context
 
-**Current Phase:** Phase 5 - Data Import Complete (3,070 springs)
-**Status:** Ready for enrichment and homepage polish
-**Focus:** Enrichment + homepage polish + deploy
+**Current Phase:** Phase 6 - Enrichment Complete
+**Status:** All springs enriched with structured data, SEO descriptions, and photos
+**Focus:** Final polish + deploy
 
 ---
 
@@ -24,17 +24,18 @@ status: Active
 - ✅ Next.js project created (Day 1)
 - ✅ Supabase project created with PostGIS + schema
 
-### Data Pipeline (8 Sources)
+### Data Pipeline (8 Sources + 2 Enrichment Steps)
 - ✅ `01-import-gnis.ts` - USGS per-state hot springs (550 springs)
 - ✅ `02-scrape-swimmingholes.ts` - Enhanced with sub-place parsing (1,116 springs)
 - ✅ `03-scrape-idaho.ts` - idahohotsprings.com (9 springs)
-- ✅ `04-enrich-springs.ts` - Tavily + gpt-4o-mini enrichment
+- ✅ `04-enrich-springs.ts` - Tavily + gpt-4o-mini structured data extraction
 - ✅ `05-validate-data.ts` - Zod validation + duplicate merge
 - ✅ `06-scrape-soakoregon.ts` - soakoregon.com (32 springs)
 - ✅ `07-import-pangaea.ts` - PANGAEA NOAA dataset (1,065 springs)
 - ✅ `08-scrape-wikipedia.ts` - Wikipedia with article fetching (48 springs)
 - ✅ `09-scrape-hotspringslocator.ts` - hotspringslocator.com (53 springs)
 - ✅ `10-scrape-tophotsprings.ts` - tophotsprings.com 24 states (197 springs)
+- ✅ `11-generate-seo-narratives.ts` - GPT-4.1-mini SEO descriptions (NEW)
 - ✅ `lib/dedup.ts` - Pre-insert dedup + merge utilities
 
 ### Frontend (Day 3.5 Complete)
@@ -48,10 +49,16 @@ status: Active
 - ✅ Accessibility: ARIA labels, keyboard navigation
 
 ### Database
-- ✅ **3,070 springs** across 8 sources (deduplicated)
-- ✅ State counts working (45+ states with springs)
+- ✅ **2,956 springs** across 8 sources (fully deduplicated + cleaned)
+- ✅ All 1,690 ALL CAPS names converted to Title Case
+- ✅ 113 duplicate springs merged with best data preserved
+- ✅ State counts updated (45+ states with springs)
 - ✅ `nearby_springs()` extended with lat/lng/photo_url
-- ✅ Pre-insert + post-import deduplication system
+
+### Enrichment (Complete - December 21, 2025)
+- ✅ **Structured Data:** 2,931 springs enriched via Tavily + gpt-4o-mini
+- ✅ **SEO Descriptions:** All springs have markdown descriptions (gpt-4.1-mini, ~$1.65 total)
+- ✅ **Photos:** 2,212 springs (75%) have Wikimedia Commons photos
 
 ---
 
@@ -67,59 +74,57 @@ status: Active
 | Wikipedia | 48 | Rich history and descriptions |
 | soakoregon.com | 32 | Oregon-focused, detailed access info |
 | idahohotsprings.com | 9 | Idaho-focused |
-| **Total** | **3,070** | Clean, deduplicated |
+| **Total** | **2,956** | Clean, deduplicated, Title Case |
 
 ---
 
 ## Immediate Next Steps
 
-1. **Run Enrichment** (API keys configured in .env.local)
-   ```bash
-   npx tsx scripts/04-enrich-springs.ts --limit 100  # Start with 100
+1. **Drop orphaned column** (manual in Supabase dashboard)
+   ```sql
+   ALTER TABLE springs DROP COLUMN IF EXISTS seo_description;
    ```
 
-2. **Polish Homepage**
-   - Connect to real data (3,070 springs available)
-   - Verify filters work with Supabase
-   - Add loading states
+2. **Final Polish**
+   - Verify homepage displays real data correctly
+   - Test spring detail pages with new descriptions + photos
+   - Spot-check photo quality on a few springs
 
-3. **Deploy** (Day 4)
+3. **Deploy** (Day 6)
    - ✅ sitemap.ts - Dynamic sitemap at /sitemap.xml
    - ✅ Structured data - TouristAttraction + BreadcrumbList schemas
    - Deploy to Vercel
 
 ---
 
-## Recently Completed (Day 5 - Extended Data Import)
+## Recently Completed (Day 5 - Extended Data Import + Generic Name Resolution)
+
+### Generic Name Resolution ✅ (Dec 20, 2025)
+- **Problem:** 70 springs had generic names ("Hot Spring", "Warm Springs", "NA", "SPRING") that would return garbage from web search
+- **Solution:** 4 parallel subagents researched all 70 using coordinates to identify real names
+- **Results:** All 70 renamed with proper identifications + enriched descriptions + temperatures
+- **Examples:**
+  - "Hot Spring, AK" → Manley Hot Springs (private greenhouse, $5)
+  - "Hot Springs, AR" → Hot Springs National Park (143°F, 47 springs)
+  - "Hot Springs, VA" → The Omni Homestead Resort (1766)
+  - "NA, WY" → West Thumb Geyser Basin (Yellowstone)
+
+### Enrichment Pipeline Improvements
+- Changed Tavily to `search_depth: 'advanced'` (~1400 chars vs ~150 chars)
+- Added numeric coercion for LLM outputs (handles strings/floats for integer fields)
+- Created `11-generate-seo-narratives.ts` for SEO narrative generation
 
 ### New Scrapers Built
-- **PANGAEA NOAA Import** (`07-import-pangaea.ts`)
-  - 1,065 springs from NOAA's 1980-1981 geothermal survey
-  - Tab-delimited dataset with temperature data
-  - Fixed missing `experience_type` field bug
-
-- **Wikipedia Scraper** (`08-scrape-wikipedia.ts`)
-  - Parses List of hot springs in the United States
-  - Fetches individual Wikipedia articles for rich content
-  - Extracts coordinates from geo microformat
-  - Falls back to Tavily API for missing coordinates
-
-- **hotspringslocator.com Scraper** (`09-scrape-hotspringslocator.ts`)
-  - 6 western states (CA, ID, MT, NV, OR, WA)
-  - High-quality data: GPS, temperature, water chemistry, pH
-  - State bounds validation for coordinate accuracy
-
-- **tophotsprings.com Scraper** (`10-scrape-tophotsprings.ts`)
-  - 24 US states (including eastern states: FL, AR, NC, NY, etc.)
-  - Coordinates from Google Maps embeds
-  - Excellent descriptions from individual pages
-  - Filters out non-spring pages and international content
+- **PANGAEA NOAA Import** (`07-import-pangaea.ts`) - 1,065 springs
+- **Wikipedia Scraper** (`08-scrape-wikipedia.ts`) - 48 springs
+- **hotspringslocator.com Scraper** (`09-scrape-hotspringslocator.ts`) - 53 springs
+- **tophotsprings.com Scraper** (`10-scrape-tophotsprings.ts`) - 197 springs
 
 ### Data Growth
 - Started session: 2,820 springs
 - Added from hotspringslocator.com: +53 springs
 - Added from tophotsprings.com: +197 springs
-- **Final count: 3,070 springs**
+- **Final count: 3,070 springs** (all with proper names)
 
 ---
 
@@ -145,8 +150,12 @@ npx tsx scripts/08-scrape-wikipedia.ts
 npx tsx scripts/09-scrape-hotspringslocator.ts
 npx tsx scripts/10-scrape-tophotsprings.ts
 
-# Enrichment
+# Enrichment (Step 1: structured data)
 npx tsx scripts/04-enrich-springs.ts --limit 100
+
+# SEO Narratives (Step 2: prose descriptions)
+npx tsx scripts/11-generate-seo-narratives.ts --limit 100
+npx tsx scripts/11-generate-seo-narratives.ts --limit 50 --model gpt-4o  # Higher quality
 
 # Validation
 npx tsx scripts/05-validate-data.ts

@@ -1,7 +1,7 @@
 ---
-Last-Updated: 2025-12-20
+Last-Updated: 2025-12-21
 Maintainer: RB
-Status: Phase 5 - Data Import Complete
+Status: Phase 6 - Enrichment Complete
 ---
 
 # Progress Log: SoakMap
@@ -9,8 +9,8 @@ Status: Phase 5 - Data Import Complete
 ## Project Timeline
 
 **Project Start**: December 19, 2025
-**Current Phase**: Phase 5 - Data Import Complete (3,070 springs)
-**Build Target**: 4 days (extended for data import)
+**Current Phase**: Phase 6 - Enrichment Complete (2,956 springs fully enriched)
+**Build Target**: 4 days (extended for data import + enrichment)
 
 ## Key Milestones
 
@@ -21,12 +21,43 @@ Status: Phase 5 - Data Import Complete
 | 2 | Core Pages | ✅ Complete | Day 2-3 |
 | 3 | Activity Pairing | ✅ Complete | Day 3.5 |
 | 4 | Extended Data Import | ✅ Complete | Day 4-5 |
-| 5 | Polish & SEO | ⏳ In Progress | Day 5 |
+| 5 | Enrichment | ✅ Complete | Day 5-6 |
 | 6 | Launch | ⏳ Pending | Day 6 |
 
 ---
 
 ## Detailed Work Log
+
+### December 21, 2025 - Day 6: Full Enrichment Run
+
+**Enrichment Pipeline Completed:**
+- ✅ **Structured Data (Step 1):** 2,931 springs enriched
+  - Tavily `search_depth: advanced` for ~1400 chars per spring
+  - gpt-4o-mini extraction to structured JSON
+  - ~19 minutes, 0 errors
+
+- ✅ **SEO Descriptions (Step 2):** All springs have markdown descriptions
+  - gpt-4.1-mini for prose quality
+  - 50 concurrent requests (Tier 5 OpenAI)
+  - Markdown format with H2 headers (About, Getting There, What to Expect, Tips)
+  - Total cost: ~$1.65 (~$0.90 + $0.75)
+
+- ✅ **Photos (Step 3):** 2,212 springs (75%) have Wikimedia Commons photos
+  - Wikimedia Commons API only (Tavily returned garbage)
+  - Filtered: maps, logos, SVGs, small images
+  - 744 springs without photos (mostly obscure/remote)
+
+**Pipeline Improvements:**
+- Added `MarkdownContent` component for rendering descriptions with react-markdown
+- Updated SEO prompt to generate structured markdown with headers
+- Fixed script concurrency (10 → 50 for Tier 5 OpenAI)
+- Removed unnecessary delays in photo fetch script
+- Cleaned 312 bad Tavily photos (Pinterest, random blogs)
+
+**New Scripts:**
+- `12-fetch-photos.ts` - Wikimedia Commons photo fetching
+
+---
 
 ### December 20, 2025 - Day 5: Extended Data Import
 
@@ -179,9 +210,11 @@ Status: Phase 5 - Data Import Complete
 
 ## Cost Estimates
 
-**Data Enrichment (one-time):**
-- OpenAI 4o-mini: ~$5-10 for 1,000 springs
-- Tavily: ~$10-20 for discovery + enrichment
+**Data Enrichment (actual - December 2025):**
+- Tavily advanced search: ~$60 (2,931 springs × $0.02)
+- OpenAI gpt-4o-mini (structured extraction): ~$5
+- OpenAI gpt-4.1-mini (SEO narratives): ~$1.65
+- **Total enrichment: ~$67**
 
 **Ongoing (monthly):**
 - Supabase: Free tier
