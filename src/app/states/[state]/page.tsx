@@ -161,7 +161,7 @@ export default async function StatePage({
 
         {/* Stats row */}
         <div className="container-brutal mb-8">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard icon={Flame} label="Hot Springs" count={hotCount} color="terracotta" />
             <StatCard icon={ThermometerSun} label="Warm Springs" count={warmCount} color="moss" />
             <StatCard icon={Droplets} label="Swimming Holes" count={coldCount} color="river" />

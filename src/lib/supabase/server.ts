@@ -51,9 +51,9 @@ export { createSupabaseClient as supabase };
 // =============================================================================
 
 // Pagination limits
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 5000;
 const MAX_OFFSET = 10000;
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = 100;
 
 export const db = {
   /**

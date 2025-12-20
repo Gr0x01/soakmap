@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ChevronLeft, Droplets, Flame, ThermometerSun } from 'lucide-react';
 
 import { db } from '@/lib/supabase';
-import { filterSprings } from '@/lib/utils/spring-filters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringGrid } from '@/components/springs/SpringCard';
@@ -37,17 +36,18 @@ export default async function SpringsPage({
 }) {
   const { type: springType, experience: experienceType } = await searchParams;
 
-  // Fetch all springs and stats
+  // Fetch springs with filters applied at DB level, plus stats
   const [springsResult, statsResult] = await Promise.all([
-    db.getSprings({ limit: 500 }),
+    db.getSprings({
+      spring_type: springType,
+      experience_type: experienceType,
+      limit: 3000
+    }),
     db.getStats(),
   ]);
 
-  const allSprings = springsResult.ok ? springsResult.data : [];
+  const springs = springsResult.ok ? springsResult.data : [];
   const stats = statsResult.ok ? statsResult.data : { total: 0, hot: 0, warm: 0, cold: 0 };
-
-  // Apply filters
-  const springs = filterSprings(allSprings, springType, experienceType);
 
   return (
     <div className="min-h-screen bg-stone">
