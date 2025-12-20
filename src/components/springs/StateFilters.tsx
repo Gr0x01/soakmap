@@ -52,9 +52,9 @@ export function StateFilters({ className }: StateFiltersProps) {
   );
 
   const springTypes: { value: SpringType; label: string }[] = [
-    { value: 'hot', label: 'Hot' },
-    { value: 'warm', label: 'Warm' },
-    { value: 'cold', label: 'Cold' },
+    { value: 'hot', label: 'Hot Springs' },
+    { value: 'warm', label: 'Warm Springs' },
+    { value: 'cold', label: 'Swimming Holes' },
   ];
 
   const experienceTypes: { value: ExperienceType; label: string }[] = [

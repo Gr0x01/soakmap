@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Mountain,
   Waves,
+  Clock,
 } from 'lucide-react';
 
 import { getSpringBySlug, getAllSpringSlugs } from '@/lib/data/springs';
@@ -144,6 +145,16 @@ function formatEnumValue(value: string | null | undefined): string | null {
 // Get Google Maps directions URL
 function getDirectionsUrl(spring: Spring): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${spring.lat},${spring.lng}`;
+}
+
+// Format date for display
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 // Convert nearby springs to SpringSummary for display
@@ -275,6 +286,14 @@ export default async function SpringDetailPage({
                       <WarningBadge key={warning} warning={warning} />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Last Updated */}
+              {spring.updated_at && (
+                <div className="flex items-center gap-2 text-bark/40 text-sm font-body pt-2">
+                  <Clock className="w-4 h-4" />
+                  <span>Last updated {formatDate(spring.updated_at)}</span>
                 </div>
               )}
             </div>

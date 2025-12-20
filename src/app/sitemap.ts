@@ -1,10 +1,13 @@
 import { MetadataRoute } from 'next';
-import { db } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { getAllCitySlugs } from '@/lib/data/cities';
+import { env } from '@/lib/env';
 
 const BASE_URL = 'https://soakmap.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
+
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -15,27 +18,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // State pages
-  const statesResult = await db.getStates();
-  const statePages: MetadataRoute.Sitemap = statesResult.ok
-    ? statesResult.data.map((state) => ({
-        url: `${BASE_URL}/states/${state.code.toLowerCase()}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.8,
-      }))
-    : [];
+  // State pages - states don't have updated_at, use current date
+  const { data: states } = await supabase
+    .from('states')
+    .select('code')
+    .gt('spring_count', 0);
 
-  // Spring detail pages
-  const springsResult = await db.getSpringSlugs();
-  const springPages: MetadataRoute.Sitemap = springsResult.ok
-    ? springsResult.data.map((spring) => ({
-        url: `${BASE_URL}/springs/${spring.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      }))
-    : [];
+  const statePages: MetadataRoute.Sitemap = (states || []).map((state) => ({
+    url: `${BASE_URL}/states/${state.code.toLowerCase()}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  // Spring detail pages - use actual updated_at from database
+  const { data: springs } = await supabase
+    .from('springs')
+    .select('slug, updated_at');
+
+  const springPages: MetadataRoute.Sitemap = (springs || []).map((spring) => ({
+    url: `${BASE_URL}/springs/${spring.slug}`,
+    lastModified: spring.updated_at ? new Date(spring.updated_at) : new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
 
   // Near city pages
   const citySlugs = getAllCitySlugs();

@@ -1,13 +1,29 @@
 import Link from 'next/link';
-import { Droplets, Github } from 'lucide-react';
+import { Droplets } from 'lucide-react';
+
+// Top states by spring count (hardcoded for performance - these rarely change)
+const TOP_STATES = [
+  { code: 'CA', name: 'California' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'WY', name: 'Wyoming' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'CO', name: 'Colorado' },
+];
 
 export function Footer() {
   return (
     <footer className="bg-forest text-cream mt-auto">
-      <div className="container-brutal py-12">
-        <div className="grid gap-8 md:grid-cols-4">
+      <div className="container-brutal py-12 md:py-16">
+        <div className="grid gap-10 md:gap-8 md:grid-cols-12">
           {/* Brand */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-4">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 bg-cream rounded-lg flex items-center justify-center">
                 <Droplets className="w-5 h-5 text-forest" />
@@ -16,23 +32,22 @@ export function Footer() {
                 Soak<span className="text-terracotta">Map</span>
               </span>
             </Link>
-            <p className="text-cream/70 max-w-md font-body leading-relaxed">
+            <p className="text-cream/70 max-w-sm font-body leading-relaxed text-sm">
               Discover natural hot springs and swimming holes across America.
-              Filter by temperature, experience type, and location to find your
-              perfect soak.
+              Find your perfect soak by temperature, experience type, and location.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90">
+          {/* Explore Links */}
+          <div className="md:col-span-2">
+            <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90 text-sm uppercase">
               Explore
             </h4>
-            <ul className="space-y-2 font-body">
+            <ul className="space-y-2.5 font-body text-sm">
               <li>
                 <Link
                   href="/springs"
-                  className="text-cream/60 hover:text-moss transition-colors"
+                  className="text-cream/60 hover:text-cream transition-colors"
                 >
                   All Springs
                 </Link>
@@ -40,14 +55,14 @@ export function Footer() {
               <li>
                 <Link
                   href="/states"
-                  className="text-cream/60 hover:text-moss transition-colors"
+                  className="text-cream/60 hover:text-cream transition-colors"
                 >
                   Browse by State
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/springs?spring_type=hot"
+                  href="/springs?type=hot"
                   className="text-cream/60 hover:text-terracotta transition-colors"
                 >
                   Hot Springs
@@ -55,7 +70,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/springs?spring_type=cold"
+                  href="/springs?type=cold"
                   className="text-cream/60 hover:text-river transition-colors"
                 >
                   Swimming Holes
@@ -64,56 +79,36 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* About */}
-          <div>
-            <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90">
-              About
+          {/* Top States - Two columns */}
+          <div className="md:col-span-6">
+            <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90 text-sm uppercase">
+              Top States
             </h4>
-            <ul className="space-y-2 font-body">
-              <li>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5 font-body text-sm">
+              {TOP_STATES.map((state) => (
                 <Link
-                  href="/about"
-                  className="text-cream/60 hover:text-moss transition-colors"
+                  key={state.code}
+                  href={`/states/${state.code.toLowerCase()}`}
+                  className="text-cream/60 hover:text-cream transition-colors"
                 >
-                  About SoakMap
+                  {state.name}
                 </Link>
-              </li>
-              <li>
-                <Link
-                  href="/submit"
-                  className="text-cream/60 hover:text-moss transition-colors"
-                >
-                  Submit a Spring
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-cream/60 hover:text-moss transition-colors"
-                >
-                  Contact
-                </Link>
-              </li>
-            </ul>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-cream/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-cream/40 text-sm font-body">
-            &copy; {new Date().getFullYear()} SoakMap. All rights reserved.
+            &copy; {new Date().getFullYear()} SoakMap. Find your perfect soak.
           </p>
-          <div className="flex items-center gap-4">
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cream/40 hover:text-cream transition-colors"
-              aria-label="GitHub"
-            >
-              <Github className="w-5 h-5" />
-            </a>
-          </div>
+          <Link
+            href="/states"
+            className="text-cream/40 hover:text-cream transition-colors text-sm font-body"
+          >
+            All States
+          </Link>
         </div>
       </div>
     </footer>
