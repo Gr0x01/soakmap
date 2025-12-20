@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { SpringType, ExperienceType } from '@/types/spring';
@@ -29,6 +28,20 @@ const MARKER_COLORS: Record<SpringType, string> = {
   hot: '#C65D3B',    // terracotta
   warm: '#8B9E6B',   // moss
   cold: '#4A7C8C',   // river
+};
+
+// Type labels for display
+const TYPE_LABELS: Record<SpringType, string> = {
+  hot: 'Hot Spring',
+  warm: 'Warm Spring',
+  cold: 'Swimming Hole',
+};
+
+// Experience icons (simple SVG paths)
+const EXPERIENCE_ICONS: Record<ExperienceType, string> = {
+  resort: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M13 21V3l6 4v14"/></svg>`,
+  primitive: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/><path d="M12 16v2"/></svg>`,
+  hybrid: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
 };
 
 // Validate slug format to prevent open redirects
@@ -154,58 +167,58 @@ export function SpringMap({
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
       el.style.cursor = 'pointer';
-      el.style.transition = 'transform 0.2s ease';
+      el.style.transition = 'box-shadow 0.15s ease';
 
       // Accessibility attributes
       el.setAttribute('tabindex', '0');
       el.setAttribute('role', 'button');
       el.setAttribute('aria-label', `View ${escapeHtml(spring.name)} - ${formatType(spring.spring_type)} spring`);
 
-      // Event handlers
+      // Event handlers - use box-shadow for hover effect instead of transform
+      // to avoid position issues with MapLibre markers
       const handleMouseEnter = () => {
-        el.style.transform = 'scale(1.2)';
+        el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.5)';
       };
       const handleMouseLeave = () => {
-        el.style.transform = 'scale(1)';
-      };
-      const handleClick = () => {
-        handleMarkerClick(spring.slug);
-      };
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleMarkerClick(spring.slug);
-        }
+        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
       };
 
       el.addEventListener('mouseenter', handleMouseEnter);
       el.addEventListener('mouseleave', handleMouseLeave);
-      el.addEventListener('click', handleClick);
-      el.addEventListener('keydown', handleKeyDown);
 
       // Store cleanup function
       cleanupFns.current.push(() => {
         el.removeEventListener('mouseenter', handleMouseEnter);
         el.removeEventListener('mouseleave', handleMouseLeave);
-        el.removeEventListener('click', handleClick);
-        el.removeEventListener('keydown', handleKeyDown);
       });
 
       // Create popup with escaped content
       const escapedName = escapeHtml(spring.name);
-      const typeLabel = formatType(spring.spring_type);
+      const typeLabel = TYPE_LABELS[spring.spring_type];
       const experienceLabel = formatType(spring.experience_type);
+      const experienceIcon = EXPERIENCE_ICONS[spring.experience_type];
+      const markerColor = MARKER_COLORS[spring.spring_type];
+      const springUrl = isValidSlug(spring.slug) ? `/springs/${spring.slug}` : '#';
 
       const popup = new maplibregl.Popup({
-        offset: 15,
-        closeButton: false,
+        offset: 18,
+        closeButton: true,
+        closeOnClick: false,
         className: 'spring-popup',
+        maxWidth: '280px',
       }).setHTML(`
-        <div style="font-family: system-ui, sans-serif; padding: 4px;">
-          <strong style="font-size: 14px; color: #2D4739;">${escapedName}</strong>
-          <div style="font-size: 12px; color: #666; margin-top: 2px;">
-            ${typeLabel} • ${experienceLabel}
+        <div class="spring-popup-content">
+          <div class="spring-popup-header">
+            <span class="spring-popup-badge" style="background: ${markerColor};">${typeLabel}</span>
           </div>
+          <h3 class="spring-popup-name">${escapedName}</h3>
+          <div class="spring-popup-meta">
+            <span class="spring-popup-experience">${experienceIcon} ${experienceLabel}</span>
+          </div>
+          <a href="${springUrl}" class="spring-popup-link">
+            View Details
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
         </div>
       `);
 

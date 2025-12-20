@@ -219,85 +219,31 @@ export default async function SpringDetailPage({
 
         {/* Hero section */}
         <div className="container-brutal">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Left column - Photo/placeholder and map */}
-            <div className="space-y-6">
-              {/* Photo area */}
-              <div
-                className={`aspect-[4/3] rounded-2xl overflow-hidden relative ${
-                  spring.spring_type === 'hot'
-                    ? 'bg-gradient-to-br from-terracotta/20 via-terracotta/10 to-sand/30'
-                    : spring.spring_type === 'warm'
-                    ? 'bg-gradient-to-br from-moss/20 via-moss/10 to-sand/30'
-                    : 'bg-gradient-to-br from-river/20 via-river/10 to-sand/30'
-                }`}
-              >
-                {spring.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={spring.photo_url}
-                    alt={spring.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div
-                        className={`w-24 h-24 mx-auto mb-4 rounded-full blur-2xl opacity-50 ${
-                          spring.spring_type === 'hot'
-                            ? 'bg-terracotta'
-                            : spring.spring_type === 'warm'
-                            ? 'bg-moss'
-                            : 'bg-river'
-                        }`}
-                      />
-                      {spring.spring_type === 'cold' ? (
-                        <Waves className="w-16 h-16 mx-auto text-river/40" />
-                      ) : (
-                        <Mountain className="w-16 h-16 mx-auto text-forest/30" />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Badges overlay */}
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <SpringTypeBadge type={spring.spring_type} />
-                  <ExperienceTypeBadge type={spring.experience_type} />
-                </div>
-              </div>
-
-              {/* Interactive map */}
-              <div className="aspect-video rounded-xl overflow-hidden shadow-soft border border-forest/10">
-                <SingleSpringMap
-                  lat={spring.lat}
-                  lng={spring.lng}
-                  name={spring.name}
-                  springType={spring.spring_type}
-                />
-              </div>
+          {/* Title and badges */}
+          <div className="mb-8">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <SpringTypeBadge type={spring.spring_type} />
+              <ExperienceTypeBadge type={spring.experience_type} />
             </div>
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-forest mb-3 leading-tight">
+              {spring.name}
+            </h1>
+            <div className="flex items-center gap-2 text-bark/70 font-body">
+              <MapPin className="w-5 h-5" />
+              <span>{spring.state}</span>
+              {spring.temp_f && (
+                <>
+                  <span className="text-bark/30">•</span>
+                  <Thermometer className="w-4 h-4" />
+                  <span>{spring.temp_f}°F</span>
+                </>
+              )}
+            </div>
+          </div>
 
-            {/* Right column - Details */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left column - Description */}
             <div className="space-y-6">
-              {/* Title and location */}
-              <div>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-forest mb-3 leading-tight">
-                  {spring.name}
-                </h1>
-                <div className="flex items-center gap-2 text-bark/70 font-body">
-                  <MapPin className="w-5 h-5" />
-                  <span>{spring.state}</span>
-                  {spring.temp_f && (
-                    <>
-                      <span className="text-bark/30">•</span>
-                      <Thermometer className="w-4 h-4" />
-                      <span>{spring.temp_f}°F</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
               {/* Description */}
               {spring.description && (
                 <MarkdownContent content={spring.description} />
@@ -305,7 +251,7 @@ export default async function SpringDetailPage({
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
-                  <a
+                <a
                   href={getDirectionsUrl(spring)}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -331,6 +277,31 @@ export default async function SpringDetailPage({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Right column - Details */}
+            <div className="space-y-6">
+              {/* Photo - only show if we have one */}
+              {spring.photo_url && (
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-soft">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={spring.photo_url}
+                    alt={spring.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Interactive map */}
+              <div className="aspect-video rounded-xl overflow-hidden shadow-soft border border-forest/10">
+                <SingleSpringMap
+                  lat={spring.lat}
+                  lng={spring.lng}
+                  name={spring.name}
+                  springType={spring.spring_type}
+                />
+              </div>
 
               {/* Info grid */}
               <div className="grid grid-cols-2 gap-3">
