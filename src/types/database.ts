@@ -171,6 +171,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      tavily_cache: {
+        Row: {
+          id: string;
+          query_hash: string;
+          query: string;
+          results: Json;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          query_hash: string;
+          query: string;
+          results: Json;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          query_hash?: string;
+          query?: string;
+          results?: Json;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

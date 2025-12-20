@@ -138,10 +138,16 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 
 ## LLM Model Reference
 
-**Primary Model**: OpenAI gpt-4o-mini
-- **Purpose**: Spring data extraction and enrichment
-- **Use Case**: Convert raw text snippets to structured JSON
+**Structured Extraction**: OpenAI gpt-4o-mini
+- **Purpose**: Extract structured data from Tavily search results
+- **Use Case**: Convert raw text snippets to structured JSON (temp, access, fees, etc.)
 - **Cost**: ~$0.15/1M input tokens, ~$0.60/1M output tokens
+
+**SEO Narratives**: OpenAI gpt-4.1-mini
+- **Purpose**: Generate 150-200 word SEO descriptions
+- **Use Case**: Engaging prose for spring detail pages
+- **Cost**: ~$0.40/1M input tokens, ~$1.60/1M output tokens
+- **Note**: Better prose quality than gpt-5-mini for narrative content
 
 **Prompt Template**:
 ```
@@ -161,9 +167,14 @@ Return JSON. Use null if unknown.
 
 ## Cost Summary
 
-### One-Time (Enrichment)
-- OpenAI extraction: ~$5-10 for 1,000 springs
-- Tavily searches: ~$10-20 for discovery + enrichment
+### One-Time (Enrichment for 3,070 springs)
+
+| Component | First Run | Re-runs |
+|-----------|-----------|---------|
+| Tavily advanced search ($0.02/search) | ~$61 | $0 (cached) |
+| gpt-4o-mini extraction | ~$0.60 | ~$0.60 |
+| gpt-4.1-mini SEO narratives | ~$2 | ~$2 |
+| **Total** | **~$64** | **~$3** |
 
 ### Ongoing (Monthly)
 - Supabase: Free tier

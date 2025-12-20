@@ -298,8 +298,44 @@ export const SEED_CITIES = [
 | **idahohotsprings.com** | `03-scrape-idaho.ts` | 9 | Idaho-focused |
 | **Total** | - | **3,070** | Clean, deduplicated |
 
-**Enrichment (pending):**
-- **Tavily** → Wikipedia, BLM.gov, travel blogs (tested: works well)
+### 4.1.1 Generic Name Resolution ✅ COMPLETED (Dec 20, 2025)
+
+**Problem:** 70 springs had generic names like "Hot Spring", "Warm Springs", "NA", "SPRING" that would return garbage results from web search enrichment.
+
+**Solution:** Used 4 parallel subagents to research all 70 springs using coordinates to identify real names.
+
+**Results - All 70 renamed:**
+
+| Original | State | Real Name | Key Details |
+|----------|-------|-----------|-------------|
+| Hot Spring | AK | Manley Hot Springs | Private greenhouse, $5 fee |
+| Hot Springs | AK | Horner Hot Springs | Remote, 118°F, boat access |
+| Warm Springs | AK | Baranof Warm Springs | 124°F, floatplane/boat only |
+| Hot Springs | AR | Hot Springs National Park | 143°F, 47 springs, Bathhouse Row |
+| Hot Spring | AZ | Castle Hot Springs | Luxury resort $1,200+/night |
+| Hot Springs | AZ | Clifton Hot Springs | Primitive riverside, 140°F |
+| SPRING | AZ | Verde Hot Springs | 1920s ruins, clothing optional |
+| Hot Springs | CO | Pagosa Hot Springs | World's deepest, 144°F |
+| Warm Springs | GA | FDR Warm Springs | 88°F, historic FDR site |
+| Warm Springs | ID | Givens Hot Springs | Historic Oregon Trail site |
+| Hot Springs | NC | Hot Springs Resort & Spa | Only hot spring in NC |
+| Hot Springs | NM | San Francisco Hot Springs | Free, 3mi hike, 120°F |
+| Hot Spring | NV | Two Mile Hot Spring | Technical canyoneering |
+| Hot Springs | NV | Spencer Hot Springs | Free BLM, cattle troughs |
+| Hot Springs | OR | Hunters Hot Springs | Old Perpetual geyser |
+| Warm Spring | OR | Snively Hot Springs | BLM day-use only |
+| Hot Springs | SD | Evans Plunge Mineral Springs | World's largest warm pool |
+| Hot Springs | TX | Chinati Hot Springs | Private resort, reservations |
+| Hot Springs | UT | Mystic Hot Springs | Travertine terraces, $25/2hrs |
+| Hot Springs | VA | The Omni Homestead Resort | Historic 1766 resort |
+| Warm Springs | VA | Warm Springs Pools | Jefferson Pools, 1761 |
+| Hot Springs | WA | Carson Hot Springs Resort | Columbia Gorge bathhouse |
+| NA | WY | West Thumb Geyser Basin | Yellowstone, viewing only |
+
+*...plus 47 more springs renamed with proper identifications*
+
+**Enrichment:**
+- **Tavily** → Wikipedia, BLM.gov, travel blogs (advanced search depth)
 - **gpt-4o-mini** → Extract structured JSON from snippets
 
 **QA/Cross-reference (manual, don't scrape):**
@@ -320,14 +356,33 @@ export const SEED_CITIES = [
 | `08-scrape-wikipedia.ts` | Wikipedia list + articles | 48 |
 | `09-scrape-hotspringslocator.ts` | hotspringslocator.com (6 states) | 53 |
 | `10-scrape-tophotsprings.ts` | tophotsprings.com (24 states) | 197 |
-| `04-enrich-springs.ts` | Tavily + gpt-4o-mini | Pending |
+| `04-enrich-springs.ts` | Tavily (advanced) + gpt-4o-mini | Ready |
 | `05-validate-data.ts` | Zod validation + dedup merge | ✅ |
+| `11-generate-seo-narratives.ts` | gpt-4.1-mini SEO descriptions | Ready |
 
 **Supporting libraries:**
 - `scripts/lib/dedup.ts` - Pre-insert dedup + merge utilities
 - `scripts/lib/config.ts` - Rate limits for all sources
 - `scripts/lib/logger.ts` - Consistent logging
 - `scripts/lib/utils.ts` - Slugify, chunk, sleep utilities
+
+**Enrichment features (04-enrich-springs.ts):**
+- Parallel processing: 50 concurrent springs (configurable via `--concurrency`)
+- Tavily cache: `tavily_cache` table with SHA256 hash keys, 30-day TTL
+- **Advanced search depth**: `search_depth: 'advanced'` for richer content (~1400 chars vs ~150 chars)
+- DB write throttling: 10 concurrent updates to avoid connection exhaustion
+- Inter-batch rate limiting: 200ms delay between batches
+- Numeric coercion: Handles LLM returning strings/floats for integer fields
+- Error logging: LLM parse failures and API errors logged
+- Dry run mode: `--dry-run` to test without writes
+
+**SEO Narrative Generation (11-generate-seo-narratives.ts):**
+- Model: gpt-4.1-mini (best prose quality for narratives)
+- Target: 150-200 words per spring (max 250)
+- Concurrency: 30 parallel requests
+- Database fields: `seo_description` (text), `seo_status` (pending/generated/reviewed/skipped)
+- Guidelines: Vivid sensory language, practical visitor info, authentic tone
+- Cost: ~$0.40/1M input + $1.60/1M output tokens
 
 **Run all scrapers:**
 ```bash
@@ -340,9 +395,28 @@ npx tsx scripts/08-scrape-wikipedia.ts
 npx tsx scripts/09-scrape-hotspringslocator.ts
 npx tsx scripts/10-scrape-tophotsprings.ts
 npx tsx scripts/05-validate-data.ts --fix-duplicates
+
+# Enrichment Step 1: Structured data extraction (parallel, cached)
+npx tsx scripts/04-enrich-springs.ts --dry-run --limit 10  # Test
+npx tsx scripts/04-enrich-springs.ts --limit 100           # Small batch
+npx tsx scripts/04-enrich-springs.ts --limit 3100          # Full run
+
+# Enrichment Step 2: SEO narrative generation (run after step 1 for best context)
+npx tsx scripts/11-generate-seo-narratives.ts --dry-run --limit 5  # Test quality
+npx tsx scripts/11-generate-seo-narratives.ts --limit 100          # Small batch
+npx tsx scripts/11-generate-seo-narratives.ts --limit 3100         # Full run
 ```
 
-**Estimated cost for enrichment:** ~$15-30 total (Tavily ~$10-20, OpenAI ~$5-10)
+**Estimated cost for enrichment (3,070 springs):**
+
+| Component | First Run | Re-runs (cached) |
+|-----------|-----------|------------------|
+| Tavily advanced search | ~$61 | $0 (cached 30 days) |
+| gpt-4o-mini extraction | ~$0.60 | ~$0.60 |
+| gpt-4.1-mini narratives | ~$2 | ~$2 |
+| **Total** | **~$64** | **~$3** |
+
+*Tavily: $0.02/search (advanced). OpenAI: 4o-mini ~$0.15/$0.60 per 1M tokens, 4.1-mini ~$0.40/$1.60 per 1M tokens.*
 
 ### 4.3 swimmingholes.org Data Fields
 
@@ -469,13 +543,17 @@ npm install sharp  # Image processing
 1. **Parallel track**: Schema + basic UI on day 1, data pipeline runs while iterating UI
 2. **Full MapLibre**: Interactive maps with clustering (not static images)
 3. **USGS GNIS** instead of NOAA (NOAA decommissioned May 2025)
-4. **gpt-4o-mini** for extraction (cost-effective at ~$0.15/1M input tokens)
-5. **Organic/editorial aesthetic** with Space Grotesk + Newsreader fonts
-6. **URL-based filter state** for SEO and shareability
-7. **8 data sources** for comprehensive coverage (3,070 springs total)
-8. **Pre-insert deduplication** to prevent duplicate entries during import
-9. **Google Maps embed parsing** for coordinate extraction (tophotsprings.com)
-10. **State bounds validation** to catch coordinate errors
+4. **gpt-4o-mini** for structured extraction (cost-effective at ~$0.15/1M input tokens)
+5. **gpt-4.1-mini** for SEO narratives (better prose quality than gpt-5-mini)
+6. **Organic/editorial aesthetic** with Space Grotesk + Newsreader fonts
+7. **URL-based filter state** for SEO and shareability
+8. **8 data sources** for comprehensive coverage (3,070 springs total)
+9. **Pre-insert deduplication** to prevent duplicate entries during import
+10. **Google Maps embed parsing** for coordinate extraction (tophotsprings.com)
+11. **State bounds validation** to catch coordinate errors
+12. **Tavily advanced search**: `search_depth: 'advanced'` returns ~1400 chars vs ~150 chars for basic
+13. **Generic name resolution**: Subagents research 70 generic-named springs using coordinates
+14. **Two-step enrichment**: (1) structured data extraction, (2) SEO narrative generation
 
 ---
 
