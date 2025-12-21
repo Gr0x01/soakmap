@@ -16,7 +16,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 const INDEXNOW_KEY = '132b0895159307328ce82b36d75aacd0';
-const SITE_HOST = 'soakmap.com';
+const SITE_HOST = 'www.soakmap.com';
 const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 
 // All valid state codes
