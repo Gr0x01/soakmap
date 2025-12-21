@@ -8,15 +8,17 @@ import {
   getSpringTypeFromFilter,
   getFilterLabel,
   getStateTypeTitle,
-  getStateTypeIntro,
+  getStateTypeContent,
   isValidFilterType,
   FILTER_TYPES,
   type FilterType,
 } from '@/lib/data/state-type-content';
+import { generateBreadcrumbSchema, safeJsonLd } from '@/lib/schema';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringGrid } from '@/components/springs/SpringCard';
 import { SpringMap } from '@/components/maps';
+import { EditorialContent } from '@/components/near-me/EditorialContent';
 import { cn } from '@/lib/utils';
 
 // State name lookup
@@ -163,10 +165,40 @@ export default async function StateFilterPage({
   };
 
   const title = getStateTypeTitle(stateName, filter as FilterType);
-  const intro = getStateTypeIntro(stateName, filter as FilterType, springs.length);
+  const content = getStateTypeContent(stateName, filter as FilterType, springs.length);
+
+  // Generate structured data
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: 'https://soakmap.com' },
+    { name: stateName, url: `https://soakmap.com/${state.toLowerCase()}` },
+    { name: getFilterLabel(filter as FilterType), url: `https://soakmap.com/${state.toLowerCase()}/${filter}` },
+  ]);
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: content.faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
 
   return (
     <div className="min-h-screen bg-stone">
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqSchema) }}
+      />
+
       <Header />
 
       <main className="pt-8 pb-20">
@@ -207,7 +239,7 @@ export default async function StateFilterPage({
               </h1>
 
               <p className="text-lg text-bark/70 font-body max-w-2xl">
-                {intro}
+                {content.intro}
               </p>
             </div>
           </div>
@@ -301,6 +333,31 @@ export default async function StateFilterPage({
             </div>
           </div>
         )}
+
+        {/* Editorial content */}
+        <EditorialContent content={content.editorial} className="mt-16" />
+
+        {/* FAQ section */}
+        <section className="container-brutal py-10">
+          <h2 className="font-display text-2xl font-bold text-forest mb-8">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-6">
+            {content.faqs.map((faq, index) => (
+              <div
+                key={index}
+                className="bg-cream rounded-xl p-6 border border-forest/10 shadow-soft"
+              >
+                <h3 className="font-display text-lg font-semibold text-forest mb-3">
+                  {faq.question}
+                </h3>
+                <p className="text-bark/70 font-body leading-relaxed">
+                  {faq.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
       <Footer />

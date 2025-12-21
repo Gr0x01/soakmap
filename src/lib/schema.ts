@@ -60,8 +60,10 @@ export function safeJsonLd(obj: unknown): string {
 }
 
 /**
- * Generate TouristAttraction schema for a spring
+ * Generate TouristAttraction + Place schema for a spring
+ * Using multiple types improves rich result eligibility
  * https://schema.org/TouristAttraction
+ * https://schema.org/Place
  */
 export function generateSpringSchema(spring: Spring) {
   // Validate required fields
@@ -71,7 +73,7 @@ export function generateSpringSchema(spring: Spring) {
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'TouristAttraction',
+    '@type': ['TouristAttraction', 'Place'],
     name: sanitizeSchemaString(spring.name),
     description: sanitizeSchemaString(spring.description),
     url: `${BASE_URL}/springs/${validateSlug(spring.slug)}`,
@@ -86,7 +88,35 @@ export function generateSpringSchema(spring: Spring) {
       addressCountry: 'US',
     },
     touristType: getTouristType(spring.experience_type),
+    publicAccess: true,
   };
+
+  // Add amenity features based on spring type
+  const amenityFeatures: Array<{ '@type': string; name: string; value: boolean }> = [];
+
+  if (spring.spring_type === 'hot') {
+    amenityFeatures.push({
+      '@type': 'LocationFeatureSpecification',
+      name: 'Hot Springs',
+      value: true,
+    });
+  } else if (spring.spring_type === 'warm') {
+    amenityFeatures.push({
+      '@type': 'LocationFeatureSpecification',
+      name: 'Warm Springs',
+      value: true,
+    });
+  } else if (spring.spring_type === 'cold') {
+    amenityFeatures.push({
+      '@type': 'LocationFeatureSpecification',
+      name: 'Natural Swimming',
+      value: true,
+    });
+  }
+
+  if (amenityFeatures.length > 0) {
+    schema.amenityFeature = amenityFeatures;
+  }
 
   // Add image if available and valid
   const validatedImage = validateImageUrl(spring.photo_url);

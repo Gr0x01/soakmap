@@ -176,6 +176,15 @@ export default async function StatePage({
           </div>
         </div>
 
+        {/* Interactive map - positioned prominently to reinforce "SoakMap" branding */}
+        {allSprings.length > 0 && (
+          <div className="container-brutal mb-8">
+            <div className="aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden shadow-soft border border-forest/10">
+              <SpringMap springs={springs} />
+            </div>
+          </div>
+        )}
+
         {/* Results count */}
         <div className="container-brutal mb-6">
           <p className="text-bark/60 font-body">
@@ -214,18 +223,6 @@ export default async function StatePage({
             </div>
           )}
         </div>
-
-        {/* Interactive map */}
-        {springs.length > 0 && (
-          <div className="container-brutal mt-12">
-            <h2 className="font-display text-2xl font-bold text-forest mb-6">
-              Map View
-            </h2>
-            <div className="aspect-[16/9] rounded-xl overflow-hidden shadow-soft border border-forest/10">
-              <SpringMap springs={springs} />
-            </div>
-          </div>
-        )}
       </main>
 
       <Footer />
