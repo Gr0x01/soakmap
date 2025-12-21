@@ -8,9 +8,9 @@ status: Active
 
 # Active Development Context
 
-**Current Phase:** Phase 6 - Enrichment Complete
-**Status:** All springs enriched with structured data, SEO descriptions, and photos
-**Focus:** Final polish + deploy
+**Current Phase:** Phase 7 - SEO Pages Complete
+**Status:** 3,184 static pages ready for deployment
+**Focus:** Deploy to Vercel
 
 ---
 
@@ -84,13 +84,15 @@ status: Active
 
 ## Immediate Next Steps
 
-1. **Drop orphaned column** (manual in Supabase dashboard)
-   ```sql
-   ALTER TABLE springs DROP COLUMN IF EXISTS seo_description;
-   ```
+1. **Deploy to Vercel** (Day 7)
+   - Connect GitHub repo to Vercel
+   - Set environment variables
+   - Deploy production build
 
-2. **Deploy** (Day 6)
-   - Deploy to Vercel
+2. **Post-deploy verification**
+   - Test redirects work (e.g., `/states/ca` → `/ca`)
+   - Verify sitemap accessible at `/sitemap.xml`
+   - Check structured data with Google Rich Results Test
 
 ### SEO Enhancements (Completed Dec 21)
 - ✅ **Super Footer** - Top 12 states + type/tag navigation

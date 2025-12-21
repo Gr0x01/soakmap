@@ -1,7 +1,7 @@
 ---
 Last-Updated: 2025-12-21
 Maintainer: RB
-Status: Phase 6 - Enrichment Complete
+Status: Phase 7 - SEO Pages Complete
 ---
 
 # Progress Log: SoakMap
@@ -9,8 +9,8 @@ Status: Phase 6 - Enrichment Complete
 ## Project Timeline
 
 **Project Start**: December 19, 2025
-**Current Phase**: Phase 6 - Enrichment Complete (2,956 springs fully enriched)
-**Build Target**: 4 days (extended for data import + enrichment)
+**Current Phase**: Phase 7 - SEO Pages Complete (3,184 static pages)
+**Build Target**: 4 days (extended for data import + enrichment + SEO)
 
 ## Key Milestones
 
@@ -22,11 +22,61 @@ Status: Phase 6 - Enrichment Complete
 | 3 | Activity Pairing | ✅ Complete | Day 3.5 |
 | 4 | Extended Data Import | ✅ Complete | Day 4-5 |
 | 5 | Enrichment | ✅ Complete | Day 5-6 |
-| 6 | Launch | ⏳ Pending | Day 6 |
+| 6 | SEO Landing Pages | ✅ Complete | Day 6 |
+| 7 | Launch | ⏳ Pending | Day 7 |
 
 ---
 
 ## Detailed Work Log
+
+### December 21, 2025 - Day 6: SEO Landing Pages
+
+**New Page Types Created:**
+- ✅ **National Type Pages** (`/type/[type]/`)
+  - `/type/hot-springs/` - targets "hot springs" (450K vol)
+  - `/type/swimming-holes/` - targets "swimming holes" (22K vol, KD 30)
+  - `/type/warm-springs/` - targets "warm springs"
+  - 500+ words editorial content, FAQs with schema markup
+
+- ✅ **Tag Pages** (`/tag/[tag]/`)
+  - `/tag/free/` - targets "free hot springs" (880 vol)
+  - `/tag/clothing-optional/` - targets "clothing optional hot springs" (1.3K vol, KD 19)
+  - `/tag/primitive/` - primitive experience springs
+  - `/tag/resort/` - resort experience springs
+  - `/tag/drive-up/` - easy access springs
+  - 400+ words editorial, state breakdown, FAQs
+
+- ✅ **State + Type Combos** (`/[state]/[filter]/`)
+  - 106 pages like `/ca/hot-springs/`, `/or/swimming-holes/`
+  - Targets keywords like "hot springs california" (15K vol, KD 47)
+  - Auto-generated content templates per state+type
+
+**URL Structure Migration:**
+- State pages moved from `/states/ca/` to `/ca/` (shorter URLs)
+- 301 redirects preserve SEO value from old URLs
+- Query param filters now have dedicated URLs
+
+**Technical Implementation:**
+- `getSpringsByTag()` added to server.ts with input validation
+- HTML sanitization for editorial content (defense-in-depth)
+- Footer updated with type and tag navigation links
+- Sitemap includes all new page types
+
+**Build Stats:**
+- **3,184 total static pages** generated
+- Build time: ~8 seconds for static generation
+- All pages have canonical URLs, OpenGraph, structured data
+
+**Files Created:**
+- `src/app/type/[type]/page.tsx`
+- `src/app/[state]/page.tsx` (migrated from /states/)
+- `src/app/[state]/[filter]/page.tsx`
+- `src/app/tag/[tag]/page.tsx`
+- `src/lib/data/type-content.ts`
+- `src/lib/data/tag-content.ts`
+- `src/lib/data/state-type-content.ts`
+
+---
 
 ### December 21, 2025 - Day 6: Full Enrichment Run
 
