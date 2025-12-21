@@ -84,15 +84,21 @@ status: Active
 
 ## Immediate Next Steps
 
-1. **IndexNow Integration** (for faster Bing/Yandex indexing)
-   - Generate API key and host at `/[key].txt`
-   - Submit 3,184 URLs to IndexNow endpoint
-   - Note: Google does not support IndexNow yet
+1. **Submit sitemap to Google Search Console**
+   - Add `https://www.soakmap.com/sitemap.xml`
+   - Google does not support IndexNow
 
 2. **Monitor indexing**
-   - Google Search Console - submit sitemap
-   - Bing Webmaster Tools - verify IndexNow submissions
+   - Bing Webmaster Tools - check IndexNow submission status
+   - Google Search Console - track indexing progress
    - Track "swimming holes" and state keyword rankings
+
+### IndexNow Integration (Completed Dec 21, 2025)
+- ✅ API key: `132b0895159307328ce82b36d75aacd0`
+- ✅ Key file deployed at `https://www.soakmap.com/132b0895159307328ce82b36d75aacd0.txt`
+- ✅ **3,123 URLs submitted** (HTTP 200 success)
+- ✅ Notified: Bing, Yandex, DuckDuckGo, Naver, Seznam
+- Script: `npx tsx scripts/submit-indexnow.ts`
 
 ### SEO Enhancements (Completed Dec 21)
 - ✅ **Super Footer** - Top 12 states + type/tag navigation
