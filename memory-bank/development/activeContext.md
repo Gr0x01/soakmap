@@ -8,9 +8,9 @@ status: Active
 
 # Active Development Context
 
-**Current Phase:** Phase 7 - SEO Pages Complete
-**Status:** 3,184 static pages ready for deployment
-**Focus:** Deploy to Vercel
+**Current Phase:** Launched
+**Status:** Live at soakmap.com (Dec 29, 2025)
+**Focus:** SEO indexing + monitoring
 
 ---
 
@@ -84,15 +84,15 @@ status: Active
 
 ## Immediate Next Steps
 
-1. **Deploy to Vercel** (Day 7)
-   - Connect GitHub repo to Vercel
-   - Set environment variables
-   - Deploy production build
+1. **IndexNow Integration** (for faster Bing/Yandex indexing)
+   - Generate API key and host at `/[key].txt`
+   - Submit 3,184 URLs to IndexNow endpoint
+   - Note: Google does not support IndexNow yet
 
-2. **Post-deploy verification**
-   - Test redirects work (e.g., `/states/ca` → `/ca`)
-   - Verify sitemap accessible at `/sitemap.xml`
-   - Check structured data with Google Rich Results Test
+2. **Monitor indexing**
+   - Google Search Console - submit sitemap
+   - Bing Webmaster Tools - verify IndexNow submissions
+   - Track "swimming holes" and state keyword rankings
 
 ### SEO Enhancements (Completed Dec 21)
 - ✅ **Super Footer** - Top 12 states + type/tag navigation
