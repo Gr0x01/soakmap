@@ -213,7 +213,7 @@ export async function FeaturedSprings() {
               {topStates.map((state) => (
                 <Link
                   key={state.code}
-                  href={`/states/${state.code.toLowerCase()}`}
+                  href={`/${state.code.toLowerCase()}`}
                   className="group relative bg-cream/5 hover:bg-cream/10 border border-cream/10 hover:border-cream/20 rounded-xl p-5 transition-all duration-300"
                 >
                   <h3 className="font-display text-lg font-bold text-cream group-hover:text-terracotta transition-colors mb-1">

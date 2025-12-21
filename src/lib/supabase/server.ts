@@ -204,6 +204,52 @@ export const db = {
   }),
 
   /**
+   * Get springs by tag filter
+   */
+  getSpringsByTag: cache(async (tag: string): Promise<Result<SpringSummary[]>> => {
+    // Validate tag against whitelist first (don't leak invalid input in error)
+    const VALID_TAGS = ['free', 'clothing-optional', 'primitive', 'resort', 'drive-up'];
+    if (!VALID_TAGS.includes(tag)) {
+      return { ok: false, error: 'Invalid tag' };
+    }
+
+    const supabase = createSupabaseClient();
+
+    let query = supabase
+      .from('springs')
+      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type, clothing_optional')
+      .order('name');
+
+    // Apply tag-specific filters
+    switch (tag) {
+      case 'free':
+        query = query.eq('fee_type', 'free');
+        break;
+      case 'clothing-optional':
+        query = query.in('clothing_optional', ['yes', 'unofficial']);
+        break;
+      case 'primitive':
+        query = query.eq('experience_type', 'primitive');
+        break;
+      case 'resort':
+        query = query.eq('experience_type', 'resort');
+        break;
+      case 'drive-up':
+        query = query.eq('access_difficulty', 'drive_up');
+        break;
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching springs by tag:', error);
+      return { ok: false, error: `Database error: ${error.message}` };
+    }
+
+    return { ok: true, data: (data as SpringSummary[]) || [] };
+  }),
+
+  /**
    * Find springs near a location using PostGIS
    */
   getNearby: cache(async (lat: number, lng: number, radiusMiles = 50, limit = 10): Promise<Result<NearbySpring[]>> => {
@@ -240,35 +286,36 @@ export const db = {
     const safeLimit = clamp(limit, 1, 20);
 
     // First try: springs with photos and high confidence
-    let { data, error } = await supabase
+    const { data: primaryData, error: primaryError } = await supabase
       .from('springs')
       .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
       .not('photo_url', 'is', null)
       .eq('confidence', 'high')
       .limit(safeLimit);
 
-    if (error) {
-      console.error('Error fetching featured springs:', error);
-      return { ok: false, error: `Database error: ${error.message}` };
+    if (primaryError) {
+      console.error('Error fetching featured springs:', primaryError);
+      return { ok: false, error: `Database error: ${primaryError.message}` };
+    }
+
+    // Return primary data if we have enough
+    if (primaryData && primaryData.length >= safeLimit) {
+      return { ok: true, data: primaryData as SpringSummary[] };
     }
 
     // Fallback: if not enough springs with photos, get a diverse mix
-    if (!data || data.length < safeLimit) {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('springs')
-        .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
-        .order('name')
-        .limit(safeLimit);
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('springs')
+      .select('id, name, slug, state, lat, lng, spring_type, experience_type, photo_url, temp_f, access_difficulty, parking, fee_type')
+      .order('name')
+      .limit(safeLimit);
 
-      if (fallbackError) {
-        console.error('Error fetching fallback springs:', fallbackError);
-        return { ok: false, error: `Database error: ${fallbackError.message}` };
-      }
-
-      data = fallbackData;
+    if (fallbackError) {
+      console.error('Error fetching fallback springs:', fallbackError);
+      return { ok: false, error: `Database error: ${fallbackError.message}` };
     }
 
-    return { ok: true, data: (data as SpringSummary[]) || [] };
+    return { ok: true, data: (fallbackData as SpringSummary[]) || [] };
   }),
 
   /**

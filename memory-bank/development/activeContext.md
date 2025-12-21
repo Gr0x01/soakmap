@@ -38,15 +38,19 @@ status: Active
 - ✅ `11-generate-seo-narratives.ts` - GPT-4.1-mini SEO descriptions (NEW)
 - ✅ `lib/dedup.ts` - Pre-insert dedup + merge utilities
 
-### Frontend (Day 3.5 Complete)
+### Frontend (Day 6 Complete)
 - ✅ Spring detail page (`/springs/[slug]`)
-- ✅ State page (`/states/[state]`)
+- ✅ State page (`/[state]`) - migrated to short URLs
+- ✅ State + type pages (`/[state]/hot-springs/`, etc.) - 106 combos
 - ✅ Near page (`/near/[location]`) - 15 seed cities
+- ✅ National type pages (`/type/hot-springs/`, `/type/swimming-holes/`, `/type/warm-springs/`)
+- ✅ Tag pages (`/tag/free/`, `/tag/clothing-optional/`, `/tag/primitive/`, `/tag/resort/`, `/tag/drive-up/`)
 - ✅ MapLibre integration (SingleSpringMap, SpringMap)
 - ✅ StateFilters component (URL-based filtering)
 - ✅ SpringCard with optional distance display
 - ✅ Error boundaries for maps
 - ✅ Accessibility: ARIA labels, keyboard navigation
+- ✅ Footer: Type and tag navigation links
 
 ### Database
 - ✅ **2,956 springs** across 8 sources (fully deduplicated + cleaned)
@@ -89,11 +93,16 @@ status: Active
    - Deploy to Vercel
 
 ### SEO Enhancements (Completed Dec 21)
-- ✅ **Super Footer** - Top 12 states with internal links for SEO
+- ✅ **Super Footer** - Top 12 states + type/tag navigation
 - ✅ **Last Updated** - Content freshness signal on spring detail pages
 - ✅ **Sitemap** - Uses real `updated_at` dates from database
 - ✅ **robots.ts** - Explicit sitemap reference
 - ✅ **Homepage Metadata** - Full OpenGraph + Twitter cards
+- ✅ **National Type Pages** - `/type/hot-springs/`, `/type/swimming-holes/`, `/type/warm-springs/`
+- ✅ **Tag Pages** - `/tag/free/`, `/tag/clothing-optional/`, `/tag/primitive/`, `/tag/resort/`, `/tag/drive-up/`
+- ✅ **State + Type Combos** - 106 pages like `/ca/hot-springs/`
+- ✅ **Short State URLs** - `/ca/` instead of `/states/ca/` with 301 redirects
+- ✅ **3,184 total static pages** generated at build
 
 ---
 

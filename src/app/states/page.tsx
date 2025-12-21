@@ -141,7 +141,7 @@ export default async function StatesPage() {
             {statesWithSprings.map((state) => (
               <Link
                 key={state.code}
-                href={`/states/${state.code.toLowerCase()}`}
+                href={`/${state.code.toLowerCase()}`}
                 className="group flex items-center justify-between p-4 bg-cream rounded-xl border border-forest/10 shadow-soft hover:shadow-medium hover:border-forest/20 transition-all"
               >
                 <div className="flex items-center gap-3">

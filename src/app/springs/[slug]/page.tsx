@@ -198,7 +198,7 @@ export default async function SpringDetailPage({
   const springSchema = generateSpringSchema(spring);
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: 'Home', url: 'https://soakmap.com' },
-    { name: spring.state, url: `https://soakmap.com/states/${spring.state.toLowerCase()}` },
+    { name: spring.state, url: `https://soakmap.com/${spring.state.toLowerCase()}` },
     { name: spring.name, url: `https://soakmap.com/springs/${spring.slug}` },
   ]);
 
@@ -220,7 +220,7 @@ export default async function SpringDetailPage({
         {/* Breadcrumb */}
         <div className="container-brutal mb-6">
           <Link
-            href={`/states/${spring.state.toLowerCase()}`}
+            href={`/${spring.state.toLowerCase()}`}
             className="inline-flex items-center gap-2 text-bark/60 hover:text-forest transition-colors font-body text-sm"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -424,7 +424,7 @@ export default async function SpringDetailPage({
                 Nearby Springs
               </h2>
               <Link
-                href={`/states/${spring.state.toLowerCase()}`}
+                href={`/${spring.state.toLowerCase()}`}
                 className="text-forest hover:text-terracotta transition-colors font-display font-medium text-sm"
               >
                 View all in {spring.state} →

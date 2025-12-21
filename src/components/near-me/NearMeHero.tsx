@@ -1,34 +1,47 @@
-import { Flame, Droplets, Compass } from 'lucide-react';
+import { Flame, Droplets, Compass, Waves } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NearMePageType } from '@/lib/data/near-me-content';
 
+// Extended type to support warm-springs from type pages
+type PageType = NearMePageType | 'warm-springs';
+
 interface NearMeHeroProps {
-  pageType: NearMePageType;
+  pageType: PageType;
   title: string;
   intro: string;
   springCount: number;
 }
 
 export function NearMeHero({ pageType, title, intro, springCount }: NearMeHeroProps) {
-  const iconColors = {
+  const iconColors: Record<PageType, string> = {
     'hot-springs': 'text-terracotta',
     'swimming-holes': 'text-river',
     'natural-springs': 'text-forest',
+    'warm-springs': 'text-sand',
   };
 
-  const bgGradients = {
+  const bgGradients: Record<PageType, string> = {
     'hot-springs': 'from-terracotta/5 via-transparent to-sand/20',
     'swimming-holes': 'from-river/5 via-transparent to-sand/20',
     'natural-springs': 'from-forest/5 via-transparent to-sand/20',
+    'warm-springs': 'from-sand/10 via-transparent to-terracotta/10',
   };
 
-  const accentBlur = {
+  const accentBlur: Record<PageType, string> = {
     'hot-springs': 'bg-terracotta/10',
     'swimming-holes': 'bg-river/10',
     'natural-springs': 'bg-moss/10',
+    'warm-springs': 'bg-sand/15',
   };
 
-  const Icon = pageType === 'hot-springs' ? Flame : pageType === 'swimming-holes' ? Droplets : Compass;
+  const Icon =
+    pageType === 'hot-springs'
+      ? Flame
+      : pageType === 'swimming-holes'
+        ? Droplets
+        : pageType === 'warm-springs'
+          ? Waves
+          : Compass;
 
   return (
     <div className="container-brutal mb-12">

@@ -48,7 +48,7 @@ export function StateQuickLinks({ states, title, description, springType }: Stat
           return (
             <Link
               key={state.code}
-              href={`/states/${state.code.toLowerCase()}`}
+              href={`/${state.code.toLowerCase()}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cream border border-forest/10 rounded-full text-sm font-body text-bark/80 hover:border-forest/30 hover:text-forest transition-colors"
             >
               <span className="font-medium">{state.name}</span>

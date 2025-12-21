@@ -60,7 +60,7 @@ export async function generateMetadata({
   const springCount = stateData?.spring_count || 0;
   const title = `Hot Springs & Swimming Holes in ${stateName}`;
   const description = `Discover ${springCount} natural springs in ${stateName}. Find hot springs, warm springs, and swimming holes with detailed access info.`;
-  const url = `https://soakmap.com/states/${state.toLowerCase()}`;
+  const url = `https://soakmap.com/${state.toLowerCase()}`;
 
   return {
     title,
@@ -96,7 +96,8 @@ export default async function StatePage({
   const stateCode = state.toUpperCase();
   const stateName = STATE_NAMES[stateCode];
 
-  if (!stateName) {
+  // Only match 2-letter state codes - prevent collision with other routes
+  if (!stateName || state.length !== 2) {
     notFound();
   }
 
@@ -205,7 +206,7 @@ export default async function StatePage({
                 Try adjusting your filters to see more results.
               </p>
               <Link
-                href={`/states/${state}`}
+                href={`/${state}`}
                 className="inline-flex items-center gap-2 text-forest hover:text-terracotta transition-colors font-display font-medium"
               >
                 Clear all filters

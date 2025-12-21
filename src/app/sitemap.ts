@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getAllCitySlugs } from '@/lib/data/cities';
+import { VALID_TAG_SLUGS } from '@/lib/data/tag-content';
 
 const BASE_URL = 'https://soakmap.com';
 
@@ -41,10 +42,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // If no Supabase config, return static + near me pages only (build-time fallback)
+  // Tag pages - high priority SEO pages for filtering
+  const tagPages: MetadataRoute.Sitemap = VALID_TAG_SLUGS.map((tag) => ({
+    url: `${BASE_URL}/tag/${tag}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.85,
+  }));
+
+  // If no Supabase config, return static + near me + tag pages only (build-time fallback)
   if (!supabaseUrl || !supabaseKey) {
     console.warn('Sitemap: Missing Supabase env vars, returning static pages only');
-    return [...staticPages, ...nearMePages];
+    return [...staticPages, ...nearMePages, ...tagPages];
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -91,5 +100,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...nearMePages, ...statePages, ...springPages, ...nearCityPages];
+  return [...staticPages, ...nearMePages, ...tagPages, ...statePages, ...springPages, ...nearCityPages];
 }

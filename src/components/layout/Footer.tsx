@@ -38,34 +38,34 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Find Nearby */}
+          {/* Browse By Type */}
           <div className="md:col-span-2">
             <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90 text-sm uppercase">
-              Find Nearby
+              By Type
             </h4>
             <ul className="space-y-2.5 font-body text-sm">
               <li>
                 <Link
-                  href="/hot-springs-near-me"
+                  href="/type/hot-springs"
                   className="text-cream/60 hover:text-terracotta transition-colors"
                 >
-                  Hot Springs Near Me
+                  Hot Springs
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/swimming-holes-near-me"
+                  href="/type/swimming-holes"
                   className="text-cream/60 hover:text-river transition-colors"
                 >
-                  Swimming Holes Near Me
+                  Swimming Holes
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/natural-springs-near-me"
-                  className="text-cream/60 hover:text-cream transition-colors"
+                  href="/type/warm-springs"
+                  className="text-cream/60 hover:text-moss transition-colors"
                 >
-                  Natural Springs Near Me
+                  Warm Springs
                 </Link>
               </li>
               <li>
@@ -79,16 +79,57 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Top States - Two columns */}
-          <div className="md:col-span-6">
+          {/* Popular Filters */}
+          <div className="md:col-span-2">
+            <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90 text-sm uppercase">
+              Filters
+            </h4>
+            <ul className="space-y-2.5 font-body text-sm">
+              <li>
+                <Link
+                  href="/tag/free"
+                  className="text-cream/60 hover:text-cream transition-colors"
+                >
+                  Free Springs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/tag/primitive"
+                  className="text-cream/60 hover:text-cream transition-colors"
+                >
+                  Primitive
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/tag/resort"
+                  className="text-cream/60 hover:text-cream transition-colors"
+                >
+                  Resort
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/tag/drive-up"
+                  className="text-cream/60 hover:text-cream transition-colors"
+                >
+                  Drive-Up Access
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Top States */}
+          <div className="md:col-span-4">
             <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90 text-sm uppercase">
               Top States
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5 font-body text-sm">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 font-body text-sm">
               {TOP_STATES.map((state) => (
                 <Link
                   key={state.code}
-                  href={`/states/${state.code.toLowerCase()}`}
+                  href={`/${state.code.toLowerCase()}`}
                   className="text-cream/60 hover:text-cream transition-colors"
                 >
                   {state.name}

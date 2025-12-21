@@ -49,7 +49,7 @@ export function SearchHeroClient({ stats, states }: SearchHeroClientProps) {
   const handleStateSelect = (state: { code: string; name: string }) => {
     setSelectedState(state);
     setIsOpen(false);
-    router.push(`/states/${state.code.toLowerCase()}`);
+    router.push(`/${state.code.toLowerCase()}`);
   };
 
   const handleNearMe = () => {
