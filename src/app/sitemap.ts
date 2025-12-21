@@ -1,14 +1,15 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getAllCitySlugs } from '@/lib/data/cities';
-import { env } from '@/lib/env';
 
 const BASE_URL = 'https://soakmap.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
+  // Use env vars directly - NEXT_PUBLIC_ vars are available at build time
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Static pages
+  // Static pages - always included
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,
@@ -18,11 +19,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // If no Supabase config, return static pages only (build-time fallback)
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn('Sitemap: Missing Supabase env vars, returning static pages only');
+    return staticPages;
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   // State pages - states don't have updated_at, use current date
-  const { data: states } = await supabase
+  const { data: states, error: statesError } = await supabase
     .from('states')
     .select('code')
     .gt('spring_count', 0);
+
+  if (statesError) {
+    console.error('Sitemap: Error fetching states:', statesError);
+  }
 
   const statePages: MetadataRoute.Sitemap = (states || []).map((state) => ({
     url: `${BASE_URL}/states/${state.code.toLowerCase()}`,
@@ -32,9 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Spring detail pages - use actual updated_at from database
-  const { data: springs } = await supabase
+  const { data: springs, error: springsError } = await supabase
     .from('springs')
     .select('slug, updated_at');
+
+  if (springsError) {
+    console.error('Sitemap: Error fetching springs:', springsError);
+  }
 
   const springPages: MetadataRoute.Sitemap = (springs || []).map((spring) => ({
     url: `${BASE_URL}/springs/${spring.slug}`,
