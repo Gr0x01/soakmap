@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock } from 'lucide-react';
 
 import { db } from '@/lib/supabase';
-import { safeJsonLd, generateBreadcrumbSchema } from '@/lib/schema';
+import { safeJsonLd, generateBreadcrumbSchema, generateItemListSchema } from '@/lib/schema';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import {
@@ -56,17 +56,29 @@ function ResultsSkeleton() {
   );
 }
 
+// Fallback stats if database is unavailable
+const FALLBACK_STATS = { total: 2900, hot: 1500, warm: 400, cold: 1000 };
+
 export default async function SwimmingHolesNearMePage() {
   // Get stats for hero
   const statsResult = await db.getStats();
-  const stats = statsResult.ok ? statsResult.data : { total: 2900, hot: 1500, warm: 400, cold: 1000 };
+  if (!statsResult.ok) {
+    console.error('[Swimming Holes Near Me] Failed to load stats:', statsResult.error);
+  }
+  const stats = statsResult.ok ? statsResult.data : FALLBACK_STATS;
 
-  // Get featured cold springs (more for static content)
+  // Get featured cold springs (16 for grid, first 6 for fallback)
   const springsResult = await db.getSprings({ spring_type: 'cold', limit: 16 });
+  if (!springsResult.ok) {
+    console.error('[Swimming Holes Near Me] Failed to load springs:', springsResult.error);
+  }
   const featuredSprings = springsResult.ok ? springsResult.data : [];
 
   // Get all states for quick links
   const statesResult = await db.getStates();
+  if (!statesResult.ok) {
+    console.error('[Swimming Holes Near Me] Failed to load states:', statesResult.error);
+  }
   const states = statesResult.ok ? statesResult.data : [];
 
   // Get relevant cities
@@ -78,6 +90,10 @@ export default async function SwimmingHolesNearMePage() {
     { name: 'Home', url: 'https://soakmap.com' },
     { name: 'Swimming Holes Near Me', url: 'https://soakmap.com/swimming-holes-near-me' },
   ]);
+  const itemListSchema = generateItemListSchema(
+    featuredSprings.map((s) => ({ name: s.name, slug: s.slug })),
+    'Popular Swimming Holes'
+  );
 
   return (
     <div className="min-h-screen bg-stone">
@@ -100,6 +116,12 @@ export default async function SwimmingHolesNearMePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
+      {itemListSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(itemListSchema) }}
+        />
+      )}
 
       <main id="main-content" className="pt-8 pb-20">
         {/* Hero */}
@@ -141,6 +163,14 @@ export default async function SwimmingHolesNearMePage() {
 
         {/* Editorial Content for SEO */}
         <EditorialContent content={content.editorial} />
+
+        {/* Content freshness signal */}
+        <div className="container-brutal pb-8">
+          <div className="flex items-center gap-2 text-bark/40 text-sm font-body">
+            <Clock className="w-4 h-4" />
+            <span>Content last updated December 2025</span>
+          </div>
+        </div>
 
         {/* FAQ Section */}
         <NearMeFAQ faqs={content.faqs} />

@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
 import { SearchHero, FeaturedSprings } from '@/components/home';
+import { safeJsonLd, generateWebSiteSchema, generateOrganizationSchema } from '@/lib/schema';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -28,8 +29,21 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
+  const websiteSchema = generateWebSiteSchema();
+  const organizationSchema = generateOrganizationSchema();
+
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Structured Data for Knowledge Graph */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationSchema) }}
+      />
+
       <Header />
 
       <main className="flex-1">

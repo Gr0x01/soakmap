@@ -16,6 +16,13 @@ function sanitizeSchemaString(value: string | null | undefined): string {
 }
 
 /**
+ * Public alias for sanitizeSchemaString for use in other modules
+ */
+export function sanitizeForSchema(value: string | null | undefined): string {
+  return sanitizeSchemaString(value);
+}
+
+/**
  * Validate slug format (alphanumeric with hyphens)
  */
 function validateSlug(slug: string): string {
@@ -131,5 +138,69 @@ export function generateBreadcrumbSchema(items: { name: string; url: string }[])
       name: item.name,
       item: item.url,
     })),
+  };
+}
+
+/**
+ * Generate ItemList schema for a list of springs
+ * Enables rich snippets/carousels in search results
+ * https://schema.org/ItemList
+ */
+export function generateItemListSchema(
+  items: Array<{ name: string; slug: string }>,
+  listName: string
+) {
+  // Filter to only valid items with name and slug
+  const validItems = items.filter((item) => item.name && item.slug);
+
+  // Return null if no valid items (caller should not render schema)
+  if (validItems.length === 0) {
+    return null;
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: sanitizeSchemaString(listName),
+    numberOfItems: validItems.length,
+    itemListElement: validItems.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'TouristAttraction',
+        name: sanitizeSchemaString(item.name),
+        url: `${BASE_URL}/springs/${validateSlug(item.slug)}`,
+      },
+    })),
+  };
+}
+
+/**
+ * Generate WebSite schema for the homepage
+ * Helps with brand presence in Knowledge Graph
+ * https://schema.org/WebSite
+ */
+export function generateWebSiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'SoakMap',
+    url: BASE_URL,
+    description: 'Find hot springs and swimming holes across America',
+  };
+}
+
+/**
+ * Generate Organization schema for the homepage
+ * Helps with brand presence in Knowledge Graph
+ * https://schema.org/Organization
+ */
+export function generateOrganizationSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'SoakMap',
+    url: BASE_URL,
+    description: 'Discover natural hot springs and swimming holes across America',
   };
 }

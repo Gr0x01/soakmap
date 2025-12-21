@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
+import { sanitizeForSchema } from '@/lib/schema';
 
-interface FAQItem {
+export interface FAQItem {
   question: string;
   answer: string;
 }
@@ -35,6 +36,7 @@ export function NearMeFAQ({ faqs, title = 'Frequently Asked Questions' }: NearMe
 
 /**
  * Generate FAQPage structured data for SEO
+ * Sanitizes input to prevent XSS in JSON-LD
  */
 export function generateFAQSchema(faqs: FAQItem[]) {
   return {
@@ -42,10 +44,10 @@ export function generateFAQSchema(faqs: FAQItem[]) {
     '@type': 'FAQPage',
     mainEntity: faqs.map((faq) => ({
       '@type': 'Question',
-      name: faq.question,
+      name: sanitizeForSchema(faq.question),
       acceptedAnswer: {
         '@type': 'Answer',
-        text: faq.answer,
+        text: sanitizeForSchema(faq.answer),
       },
     })),
   };
