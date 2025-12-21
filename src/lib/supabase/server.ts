@@ -262,8 +262,8 @@ export const db = {
     const safeLimit = clamp(limit, 1, 50);
 
     const { data, error } = await supabase.rpc('nearby_springs', {
-      lat: safeLat,
-      lng: safeLng,
+      search_lat: safeLat,
+      search_lng: safeLng,
       radius_miles: safeRadius,
       max_results: safeLimit,
     });

@@ -205,8 +205,8 @@ export type Database = {
     Functions: {
       nearby_springs: {
         Args: {
-          lat: number;
-          lng: number;
+          search_lat: number;
+          search_lng: number;
           radius_miles?: number;
           max_results?: number;
         };
@@ -218,6 +218,13 @@ export type Database = {
           spring_type: Database['public']['Enums']['spring_type'];
           experience_type: Database['public']['Enums']['experience_type'];
           distance_miles: number;
+          lat: number;
+          lng: number;
+          photo_url: string | null;
+          temp_f: number | null;
+          access_difficulty: Database['public']['Enums']['access_difficulty'] | null;
+          parking: Database['public']['Enums']['parking_type'] | null;
+          fee_type: Database['public']['Enums']['fee_type'] | null;
         }[];
       };
     };
