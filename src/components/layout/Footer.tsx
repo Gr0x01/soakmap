@@ -38,18 +38,34 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Explore Links */}
+          {/* Find Nearby */}
           <div className="md:col-span-2">
             <h4 className="font-display font-semibold tracking-wide mb-4 text-cream/90 text-sm uppercase">
-              Explore
+              Find Nearby
             </h4>
             <ul className="space-y-2.5 font-body text-sm">
               <li>
                 <Link
-                  href="/springs"
+                  href="/hot-springs-near-me"
+                  className="text-cream/60 hover:text-terracotta transition-colors"
+                >
+                  Hot Springs Near Me
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/swimming-holes-near-me"
+                  className="text-cream/60 hover:text-river transition-colors"
+                >
+                  Swimming Holes Near Me
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/natural-springs-near-me"
                   className="text-cream/60 hover:text-cream transition-colors"
                 >
-                  All Springs
+                  Natural Springs Near Me
                 </Link>
               </li>
               <li>
@@ -58,22 +74,6 @@ export function Footer() {
                   className="text-cream/60 hover:text-cream transition-colors"
                 >
                   Browse by State
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/springs?type=hot"
-                  className="text-cream/60 hover:text-terracotta transition-colors"
-                >
-                  Hot Springs
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/springs?type=cold"
-                  className="text-cream/60 hover:text-river transition-colors"
-                >
-                  Swimming Holes
                 </Link>
               </li>
             </ul>

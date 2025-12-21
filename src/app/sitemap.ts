@@ -19,10 +19,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // If no Supabase config, return static pages only (build-time fallback)
+  // "Near me" landing pages - high priority SEO pages
+  const nearMePages: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}/hot-springs-near-me`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/swimming-holes-near-me`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/natural-springs-near-me`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+  ];
+
+  // If no Supabase config, return static + near me pages only (build-time fallback)
   if (!supabaseUrl || !supabaseKey) {
     console.warn('Sitemap: Missing Supabase env vars, returning static pages only');
-    return staticPages;
+    return [...staticPages, ...nearMePages];
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -60,14 +82,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // Near city pages
+  // Near city pages (raised priority for long-tail SEO)
   const citySlugs = getAllCitySlugs();
-  const nearPages: MetadataRoute.Sitemap = citySlugs.map((slug) => ({
+  const nearCityPages: MetadataRoute.Sitemap = citySlugs.map((slug) => ({
     url: `${BASE_URL}/near/${slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
-    priority: 0.6,
+    priority: 0.7,
   }));
 
-  return [...staticPages, ...statePages, ...springPages, ...nearPages];
+  return [...staticPages, ...nearMePages, ...statePages, ...springPages, ...nearCityPages];
 }
