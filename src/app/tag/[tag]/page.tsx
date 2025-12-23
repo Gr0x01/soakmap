@@ -164,16 +164,17 @@ export default async function TagPage({ params }: TagPageProps) {
 
               {/* State breakdown summary */}
               {topStates.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-bark/60 font-body">Top states:</span>
                   {topStates.slice(0, 5).map((item) => (
-                    <span
+                    <Link
                       key={item.state}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-cream/50 text-bark/80 text-sm font-body"
+                      href={`/${item.state.toLowerCase()}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-cream/50 text-bark/80 text-sm font-body hover:bg-forest/10 hover:text-forest transition-colors"
                     >
                       <span className="font-medium">{item.state}</span>
                       <span className="text-bark/40">({item.count})</span>
-                    </span>
+                    </Link>
                   ))}
                 </div>
               )}
