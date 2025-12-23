@@ -14,8 +14,8 @@ import { StateFilters } from '@/components/springs/StateFilters';
 import { SpringMap } from '@/components/maps';
 import type { NearbySpring, SpringType, ExperienceType } from '@/types/spring';
 
-// Revalidate every hour
-export const revalidate = 3600;
+// Revalidate every 24 hours - data rarely changes
+export const revalidate = 86400;
 
 // Generate static params for all seed cities
 export async function generateStaticParams() {

@@ -6,7 +6,7 @@ import { db } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
-export const revalidate = 3600;
+export const revalidate = 86400; // 24 hours - data rarely changes
 
 export const metadata: Metadata = {
   title: 'Browse Springs by State | SoakMap',

@@ -35,8 +35,8 @@ const STATE_NAMES: Record<string, string> = {
   VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
 };
 
-// Revalidate every hour
-export const revalidate = 3600;
+// Revalidate every 24 hours - data rarely changes
+export const revalidate = 86400;
 
 // Generate static params for all state + filter combos with springs
 export async function generateStaticParams() {

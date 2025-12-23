@@ -25,8 +25,8 @@ import {
 } from '@/lib/data/type-content';
 import { SEED_CITIES } from '@/lib/data/seed-cities';
 
-// ISR: Revalidate every hour
-export const revalidate = 3600;
+// ISR: Revalidate every 24 hours - data rarely changes
+export const revalidate = 86400;
 
 interface TypePageProps {
   params: Promise<{

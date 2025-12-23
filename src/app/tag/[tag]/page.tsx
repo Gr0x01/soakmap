@@ -16,8 +16,8 @@ import {
 import { getTagContent, VALID_TAG_SLUGS } from '@/lib/data/tag-content';
 import type { SpringSummary } from '@/types';
 
-// ISR: Revalidate every hour
-export const revalidate = 3600;
+// ISR: Revalidate every 24 hours - data rarely changes
+export const revalidate = 86400;
 
 interface TagPageProps {
   params: Promise<{

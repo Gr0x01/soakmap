@@ -31,8 +31,8 @@ import { SpringCard } from '@/components/springs/SpringCard';
 import { SingleSpringMap } from '@/components/maps';
 import type { Spring, NearbySpring, SpringSummary } from '@/types/spring';
 
-// Revalidate every hour
-export const revalidate = 3600;
+// Revalidate every 24 hours - spring data rarely changes
+export const revalidate = 86400;
 
 // Generate static params for top springs
 export async function generateStaticParams() {

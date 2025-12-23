@@ -10,7 +10,7 @@ import { StatCard } from '@/components/springs/StatCard';
 import { StateFilters } from '@/components/springs/StateFilters';
 import type { SpringType, ExperienceType } from '@/types/spring';
 
-export const revalidate = 3600;
+export const revalidate = 86400; // 24 hours - data rarely changes
 
 export const metadata: Metadata = {
   title: 'All Natural Springs | SoakMap',
