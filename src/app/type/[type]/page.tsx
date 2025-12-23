@@ -29,9 +29,9 @@ import { SEED_CITIES } from '@/lib/data/seed-cities';
 export const revalidate = 3600;
 
 interface TypePageProps {
-  params: {
+  params: Promise<{
     type: string;
-  };
+  }>;
 }
 
 // Fallback stats if database is unavailable
@@ -51,7 +51,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: TypePageProps): Promise<Metadata> {
-  const { type } = params;
+  const { type } = await params;
 
   if (!isValidTypeSlug(type)) {
     return {
@@ -95,7 +95,7 @@ function ResultsSkeleton() {
 }
 
 export default async function TypePage({ params }: TypePageProps) {
-  const { type } = params;
+  const { type } = await params;
 
   // Validate type slug
   if (!isValidTypeSlug(type)) {

@@ -14,17 +14,15 @@ archive/        → historical narrative and deprecated guidance
 
 ### Core Files (Read In Order)
 YOU MUST READ THESE FILES BEFORE ANYTHING ELSE.
-1. `/memory-bank/core/quickstart.md` – one-page situational awareness + commands
-2. `/memory-bank/core/projectbrief.md` – enduring product promise and scope
-3. `/memory-bank/development/activeContext.md` – current sprint goals + blockers
-4. `/memory-bank/development/progress.md` – quarterly highlights of shipped work
-5. `/memory-bank/architecture/techStack.md` – current stack, deployments, references
+1. `/memory-bank/core/quickstart.md` – situational awareness, commands, milestones
+2. `/memory-bank/core/projectbrief.md` – product definition and data schema
+3. `/memory-bank/development/activeContext.md` – current focus + next steps
+4. `/memory-bank/architecture/techStack.md` – stack, deployments, LLM models
+5. `/memory-bank/development/progress.md` – highlights of shipped work
 
-Read additional docs only if needed (`architecture/patterns.md`, `development/daily-log/`, etc.). Long-form history now lives under `memory-bank/archive/` and is optional.
-
-**Enrichment System Reference:**
-- `/memory-bank/architecture/enrichment-reference.md` – Quick reference for LLM enrichment operations (read when working with spring data)
-- `/memory-bank/architecture/enrichment-system.md` – Detailed guide for extending the enrichment system
+**Read when working with data:**
+- `/memory-bank/architecture/data-pipeline.md` – scripts, enrichment workflow, commands
+- `/memory-bank/development/progress.md` – milestones, data sources, costs
 
 ### Documentation Updates
 Update the memory bank when:
@@ -124,14 +122,14 @@ Subagents are helpful but not mandatory for every tiny change. Use judgment:
   1. Major changes: Consult backend-architect for design validation
   2. Simple changes: Just implement following existing patterns
   3. After finishing: Use appropriate subagent (backend-architect/frontend-developer) + code-reviewer
-- **FRONTEND FEATURES**: Implement → Test → frontend-developer review + code-reviewer (for non-trivial changes)
-- **UI DESIGN**: Major redesigns use ui-designer; iterative improvements just do it
+- **FRONTEND FEATURES**: Implement using the frontend skill → Test → frontend-developer review + code-reviewer (for non-trivial changes)
+- **UI DESIGN**: Major redesigns use ui-designer; iterative improvements just do it using the frontend skill
 - **PRAGMATIC RULE**: If it's under 50 lines and follows existing patterns, just ship it with type checking
 
 ### Handling Subagent Feedback
 **Subagents suggest; you decide.**
 - **Fix**: Critical and medium-critical issues that affect security, correctness, or maintainability
-- **Consider**: Minor suggestions, but skip if they add unnecessary complexity
+- **Consider**: Minor suggestions and accessibility, but skip if they add unnecessary complexity
 - **Ignore**: Over-engineering, premature optimization, or enterprise patterns for simple MVP features
 - When in doubt about a suggestion's value, ask the user before implementing
 - Document significant subagent recommendations in memory bank
@@ -180,33 +178,21 @@ The spring data uses strict enums enforced in prompt, validation, and database:
 
 **Reference:** See `architecture/data-schema.md` for full field definitions.
 
-### Enrichment System
-The enrichment system uses LLMs to discover and enhance spring data from web sources. It's a service-based architecture with clear separation of concerns.
+### Data Pipeline
+Scripts in `/scripts/` handle data acquisition and enrichment:
 
-**Key Components:**
-- **Services** - Single-purpose business logic (spring enrichment, discovery, status verification)
-- **Repositories** - Data access layer (spring, state, warnings)
-- **Workflows** - Multi-step orchestration (NOAA import, web scraping, LLM extraction)
-- **Shared Utilities** - LLM client, token tracker, result parser, retry handler
-
-**Data Pipeline:**
 ```
-NOAA + swimmingholes.org (seed ~3,000)
-          ↓
-Tavily discovery (find ~500 more)
-          ↓
-Tavily enrichment (snippets per spring)
-          ↓
-4o-mini extraction (raw text → structured JSON)
-          ↓
-Validation layer (enforce enums)
-          ↓
-Manual QA (top 100)
-          ↓
-Production database (1,000 launch)
+8 scrapers → Supabase → Tavily + gpt-4o-mini → Validation → Production
 ```
 
-**Reference:** See `architecture/enrichment-reference.md` for API and common operations.
+**Key scripts:**
+- `01-10` - Data scrapers (GNIS, swimmingholes, Wikipedia, etc.)
+- `04` - Structured data enrichment (Tavily + LLM)
+- `05` - Validation and deduplication
+- `11` - SEO narrative generation
+- `12` - Photo fetching from Wikimedia
+
+**Reference:** See `architecture/data-pipeline.md` for full documentation.
 
 ### Component Development
 - Build reusable, composable components

@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { Clock } from 'lucide-react';
 
 import { db } from '@/lib/supabase';
@@ -19,9 +20,9 @@ import type { SpringSummary } from '@/types';
 export const revalidate = 3600;
 
 interface TagPageProps {
-  params: {
+  params: Promise<{
     tag: string;
-  };
+  }>;
 }
 
 // Generate static params for all valid tags
@@ -31,7 +32,8 @@ export async function generateStaticParams() {
 
 // Generate metadata
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
-  const content = getTagContent(params.tag);
+  const { tag } = await params;
+  const content = getTagContent(tag);
 
   if (!content) {
     return {
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
     };
   }
 
-  const canonicalUrl = `https://soakmap.com/tag/${params.tag}`;
+  const canonicalUrl = `https://soakmap.com/tag/${tag}`;
 
   return {
     title: content.title,
@@ -77,7 +79,8 @@ function getStateBreakdown(springs: SpringSummary[]): Array<{ state: string; cou
 }
 
 export default async function TagPage({ params }: TagPageProps) {
-  const content = getTagContent(params.tag);
+  const { tag } = await params;
+  const content = getTagContent(tag);
 
   // 404 if invalid tag
   if (!content) {
@@ -85,9 +88,9 @@ export default async function TagPage({ params }: TagPageProps) {
   }
 
   // Fetch springs matching this tag
-  const springsResult = await db.getSpringsByTag(params.tag);
+  const springsResult = await db.getSpringsByTag(tag);
   if (!springsResult.ok) {
-    console.error(`[Tag/${params.tag}] Failed to load springs:`, springsResult.error);
+    console.error(`[Tag/${tag}] Failed to load springs:`, springsResult.error);
   }
   const springs = springsResult.ok ? springsResult.data : [];
 
@@ -99,7 +102,7 @@ export default async function TagPage({ params }: TagPageProps) {
   const faqSchema = generateFAQSchema(content.faqs);
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: 'Home', url: 'https://soakmap.com' },
-    { name: content.h1, url: `https://soakmap.com/tag/${params.tag}` },
+    { name: content.h1, url: `https://soakmap.com/tag/${tag}` },
   ]);
   const itemListSchema = generateItemListSchema(
     springs.slice(0, 50).map((s) => ({ name: s.name, slug: s.slug })),
@@ -193,17 +196,20 @@ export default async function TagPage({ params }: TagPageProps) {
             <h2 className="font-display text-2xl md:text-3xl font-bold text-forest mb-6">
               Springs by State
             </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
               {stateBreakdown.map((item) => (
-                <div
+                <Link
                   key={item.state}
-                  className="flex items-center justify-between px-4 py-3 rounded-lg border border-forest/10 bg-cream/30 hover:bg-cream/50 transition-colors"
+                  href={`/${item.state.toLowerCase()}`}
+                  className="flex items-center justify-between px-4 py-3 rounded-lg border border-forest/10 bg-cream/30 hover:bg-cream/50 hover:border-forest/20 transition-colors"
+                  role="listitem"
+                  aria-label={`${item.state}: ${item.count} ${item.count === 1 ? 'spring' : 'springs'}`}
                 >
                   <span className="font-display font-semibold text-forest">{item.state}</span>
                   <span className="text-bark/60 font-body text-sm">
                     {item.count} {item.count === 1 ? 'spring' : 'springs'}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </section>

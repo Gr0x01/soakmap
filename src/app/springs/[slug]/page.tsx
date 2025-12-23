@@ -189,9 +189,9 @@ export default async function SpringDetailPage({
   }
 
   // Fetch nearby springs
-  const nearbyResult = await db.getNearby(spring.lat, spring.lng, 100, 6);
+  const nearbyResult = await db.getNearby(spring.lat, spring.lng, 100, 10);
   const nearbySprings = nearbyResult.ok
-    ? nearbyResult.data.filter((s) => s.id !== spring.id).slice(0, 5)
+    ? nearbyResult.data.filter((s) => s.id !== spring.id).slice(0, 8)
     : [];
 
   // Generate structured data
@@ -249,6 +249,13 @@ export default async function SpringDetailPage({
                   <span>{spring.temp_f}°F</span>
                 </>
               )}
+              {spring.updated_at && (
+                <>
+                  <span className="text-bark/30">•</span>
+                  <Clock className="w-4 h-4" />
+                  <span>Updated {formatDate(spring.updated_at)}</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -289,13 +296,6 @@ export default async function SpringDetailPage({
                 </div>
               )}
 
-              {/* Last Updated */}
-              {spring.updated_at && (
-                <div className="flex items-center gap-2 text-bark/40 text-sm font-body pt-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Last updated {formatDate(spring.updated_at)}</span>
-                </div>
-              )}
             </div>
 
             {/* Right column - Details */}
@@ -432,7 +432,7 @@ export default async function SpringDetailPage({
             </div>
 
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {nearbySprings.slice(0, 6).map((nearby) => (
+              {nearbySprings.map((nearby) => (
                 <SpringCard
                   key={nearby.id}
                   spring={nearbyToSummary(nearby)}
@@ -442,6 +442,56 @@ export default async function SpringDetailPage({
             </div>
           </section>
         )}
+
+        {/* Explore More - Internal linking for SEO */}
+        <section className="container-brutal mt-12" aria-labelledby="explore-more-heading">
+          <h2 id="explore-more-heading" className="font-display text-xl font-bold text-forest mb-4">
+            Explore More
+          </h2>
+          <nav aria-label="Related spring categories">
+            <div className="flex flex-wrap gap-3">
+              {/* Type link */}
+              <Link
+                href={`/type/${spring.spring_type === 'hot' ? 'hot-springs' : spring.spring_type === 'warm' ? 'warm-springs' : 'swimming-holes'}`}
+                className="inline-flex items-center px-4 py-2 rounded-lg border border-forest/20 bg-cream text-forest hover:bg-forest/10 hover:border-forest/40 transition-colors font-display text-sm"
+                aria-label={`Browse all ${spring.spring_type === 'hot' ? 'hot springs' : spring.spring_type === 'warm' ? 'warm springs' : 'swimming holes'} in the US`}
+              >
+                All {spring.spring_type === 'hot' ? 'hot springs' : spring.spring_type === 'warm' ? 'warm springs' : 'swimming holes'} →
+              </Link>
+
+              {/* Experience link - only for primitive/resort (hybrid has no tag page) */}
+              {(spring.experience_type === 'primitive' || spring.experience_type === 'resort') && (
+                <Link
+                  href={`/tag/${spring.experience_type}`}
+                  className="inline-flex items-center px-4 py-2 rounded-lg border border-forest/20 bg-cream text-forest hover:bg-forest/10 hover:border-forest/40 transition-colors font-display text-sm"
+                  aria-label={`Browse more ${spring.experience_type} springs`}
+                >
+                  More {spring.experience_type} springs →
+                </Link>
+              )}
+
+              {/* Free tag if applicable */}
+              {spring.fee_type === 'free' && (
+                <Link
+                  href="/tag/free"
+                  className="inline-flex items-center px-4 py-2 rounded-lg border border-forest/20 bg-cream text-forest hover:bg-forest/10 hover:border-forest/40 transition-colors font-display text-sm"
+                  aria-label="Browse all free springs in the US"
+                >
+                  Free springs →
+                </Link>
+              )}
+
+              {/* State link */}
+              <Link
+                href={`/${spring.state.toLowerCase()}`}
+                className="inline-flex items-center px-4 py-2 rounded-lg border border-forest/20 bg-cream text-forest hover:bg-forest/10 hover:border-forest/40 transition-colors font-display text-sm"
+                aria-label={`Browse all springs in ${spring.state}`}
+              >
+                All {spring.state} springs →
+              </Link>
+            </div>
+          </nav>
+        </section>
       </main>
 
       <Footer />
