@@ -5,6 +5,7 @@ import { ChevronLeft, MapPin, Flame, Droplets, ThermometerSun } from 'lucide-rea
 
 import { db } from '@/lib/supabase';
 import { filterSprings } from '@/lib/utils/spring-filters';
+import { getStateName, isValidStateCode } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringGrid } from '@/components/springs/SpringCard';
@@ -13,19 +14,6 @@ import { StateFilters } from '@/components/springs/StateFilters';
 import { SpringMap } from '@/components/maps';
 import type { SpringType, ExperienceType } from '@/types/spring';
 
-// State name lookup
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
-  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia',
-  HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
-  KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
-  MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri',
-  MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
-  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio',
-  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
-  SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont',
-  VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
-};
 
 // Revalidate every 24 hours - data rarely changes
 export const revalidate = 86400;
@@ -48,11 +36,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { state } = await params;
   const stateCode = state.toUpperCase();
-  const stateName = STATE_NAMES[stateCode];
 
-  if (!stateName) {
+  if (!isValidStateCode(stateCode)) {
     return { title: 'State Not Found' };
   }
+
+  const stateName = getStateName(stateCode);
 
   const result = await db.getStateByCode(stateCode);
   const stateData = result.ok ? result.data : null;
@@ -94,12 +83,13 @@ export default async function StatePage({
   const { type: springType, experience: experienceType } = await searchParams;
 
   const stateCode = state.toUpperCase();
-  const stateName = STATE_NAMES[stateCode];
 
   // Only match 2-letter state codes - prevent collision with other routes
-  if (!stateName || state.length !== 2) {
+  if (state.length !== 2 || !isValidStateCode(stateCode)) {
     notFound();
   }
+
+  const stateName = getStateName(stateCode);
 
   // Fetch state data and springs in parallel
   const [stateResult, springsResult] = await Promise.all([

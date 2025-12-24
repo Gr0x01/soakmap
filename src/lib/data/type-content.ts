@@ -98,7 +98,7 @@ export const TYPE_CONTENT: Record<TypePageSlug, TypeContent> = {
     intro:
       'Find the best natural swimming holes throughout the United States. Discover spring-fed pools with crystal-clear water, river swimming spots with rope swings, and waterfall basins perfect for cliff jumping. Browse swimming holes by state or search for natural swimming spots near you.',
     metaDescription:
-      'Find natural swimming holes across America. Discover spring-fed pools, river swimming spots, and waterfall basins for cliff jumping. Browse by state.',
+      'Find the best swimming holes across America. Discover natural swim holes, spring-fed pools, and waterfall basins. Browse swimming spots by state.',
     editorial: `
       <h2>Your Complete Guide to Natural Swimming Holes</h2>
       <p>America's natural swimming holes offer some of the most refreshing and memorable aquatic experiences in the country. Unlike chlorinated pools or crowded beaches, these spring-fed pools, river basins, and mountain streams provide crystal-clear water, natural beauty, and often a sense of adventure. From the limestone springs of Texas and Florida to the canyon pools of the Southwest and mountain streams of Appalachia, natural swimming holes deliver summer magic that man-made facilities simply can't replicate.</p>

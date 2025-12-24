@@ -23,6 +23,7 @@ import {
 import { getSpringBySlug, getAllSpringSlugs } from '@/lib/data/springs';
 import { db } from '@/lib/supabase';
 import { generateSpringSchema, generateBreadcrumbSchema, safeJsonLd } from '@/lib/schema';
+import { getStateName } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SpringTypeBadge, ExperienceTypeBadge, Badge } from '@/components/ui/Badge';
@@ -54,8 +55,9 @@ export async function generateMetadata({
   }
 
   const typeLabel = spring.spring_type === 'hot' ? 'Hot Spring' : spring.spring_type === 'warm' ? 'Warm Spring' : 'Swimming Hole';
-  const title = `${spring.name} - ${typeLabel} in ${spring.state}`;
-  const description = spring.description || `Discover ${spring.name}, a ${spring.experience_type} ${typeLabel.toLowerCase()} in ${spring.state}.`;
+  const stateName = getStateName(spring.state);
+  const title = `${spring.name}, ${stateName} - ${typeLabel}`;
+  const description = spring.description || `Discover ${spring.name}, a ${spring.experience_type} ${typeLabel.toLowerCase()} in ${stateName}.`;
   const canonicalUrl = `https://soakmap.com/springs/${spring.slug}`;
 
   return {

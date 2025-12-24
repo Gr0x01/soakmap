@@ -18,6 +18,7 @@ import { supabase } from './lib/supabase';
 import { createLogger } from './lib/logger';
 import { sleep } from './lib/utils';
 import { config } from './lib/config';
+import { getStateName } from '../src/lib/utils/states';
 
 const log = createLogger('SEO');
 
@@ -68,19 +69,6 @@ interface NarrativeResult {
   error?: string;
 }
 
-// State name mapping for natural prose
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
-  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia',
-  HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
-  KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
-  MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri',
-  MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
-  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio',
-  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
-  SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont',
-  VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
-};
 
 const NARRATIVE_PROMPT = `You are an expert travel writer creating SEO-optimized descriptions for a natural springs directory. Write engaging, informative content that helps visitors decide if this spring is right for them.
 
@@ -119,7 +107,7 @@ Return ONLY the markdown content with the headers. No extra quotes, labels, or e
  * Build context about the spring for the LLM
  */
 function buildSpringContext(spring: Spring): string {
-  const stateName = STATE_NAMES[spring.state] || spring.state;
+  const stateName = getStateName(spring.state);
   const lines: string[] = [
     `Spring: ${spring.name}`,
     `Location: ${stateName}`,

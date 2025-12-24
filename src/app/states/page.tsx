@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 
 import { db } from '@/lib/supabase';
+import { getStateName } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
@@ -23,60 +24,6 @@ export const metadata: Metadata = {
     url: 'https://soakmap.com/states',
     siteName: 'SoakMap',
   },
-};
-
-// State name lookup
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama',
-  AK: 'Alaska',
-  AZ: 'Arizona',
-  AR: 'Arkansas',
-  CA: 'California',
-  CO: 'Colorado',
-  CT: 'Connecticut',
-  DE: 'Delaware',
-  FL: 'Florida',
-  GA: 'Georgia',
-  HI: 'Hawaii',
-  ID: 'Idaho',
-  IL: 'Illinois',
-  IN: 'Indiana',
-  IA: 'Iowa',
-  KS: 'Kansas',
-  KY: 'Kentucky',
-  LA: 'Louisiana',
-  ME: 'Maine',
-  MD: 'Maryland',
-  MA: 'Massachusetts',
-  MI: 'Michigan',
-  MN: 'Minnesota',
-  MS: 'Mississippi',
-  MO: 'Missouri',
-  MT: 'Montana',
-  NE: 'Nebraska',
-  NV: 'Nevada',
-  NH: 'New Hampshire',
-  NJ: 'New Jersey',
-  NM: 'New Mexico',
-  NY: 'New York',
-  NC: 'North Carolina',
-  ND: 'North Dakota',
-  OH: 'Ohio',
-  OK: 'Oklahoma',
-  OR: 'Oregon',
-  PA: 'Pennsylvania',
-  RI: 'Rhode Island',
-  SC: 'South Carolina',
-  SD: 'South Dakota',
-  TN: 'Tennessee',
-  TX: 'Texas',
-  UT: 'Utah',
-  VT: 'Vermont',
-  VA: 'Virginia',
-  WA: 'Washington',
-  WV: 'West Virginia',
-  WI: 'Wisconsin',
-  WY: 'Wyoming',
 };
 
 export default async function StatesPage() {
@@ -150,7 +97,7 @@ export default async function StatesPage() {
                   </div>
                   <div>
                     <div className="font-display font-semibold text-forest group-hover:text-terracotta transition-colors">
-                      {STATE_NAMES[state.code] || state.code}
+                      {getStateName(state.code)}
                     </div>
                     <div className="text-sm text-bark/60 font-body">
                       {state.spring_count} {state.spring_count === 1 ? 'spring' : 'springs'}
@@ -185,7 +132,7 @@ export default async function StatesPage() {
                   >
                     <span className="font-display font-medium text-sm">{state.code}</span>
                     <span className="font-body text-sm">
-                      {STATE_NAMES[state.code] || state.code}
+                      {getStateName(state.code)}
                     </span>
                   </div>
                 ))}

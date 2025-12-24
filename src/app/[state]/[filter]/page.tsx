@@ -19,21 +19,7 @@ import { Footer } from '@/components/layout/Footer';
 import { SpringGrid } from '@/components/springs/SpringCard';
 import { SpringMap } from '@/components/maps';
 import { EditorialContent } from '@/components/near-me/EditorialContent';
-import { cn } from '@/lib/utils';
-
-// State name lookup
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
-  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia',
-  HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
-  KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
-  MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri',
-  MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
-  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio',
-  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
-  SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont',
-  VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
-};
+import { cn, getStateName, isValidStateCode } from '@/lib/utils';
 
 // Revalidate every 24 hours - data rarely changes
 export const revalidate = 86400;
@@ -72,11 +58,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { state, filter } = await params;
   const stateCode = state.toUpperCase();
-  const stateName = STATE_NAMES[stateCode];
 
-  if (!stateName || !isValidFilterType(filter)) {
+  if (!isValidStateCode(stateCode) || !isValidFilterType(filter)) {
     return { title: 'Page Not Found' };
   }
+
+  const stateName = getStateName(stateCode);
 
   const result = await db.getStateByCode(stateCode);
   const stateData = result.ok ? result.data : null;
@@ -132,12 +119,13 @@ export default async function StateFilterPage({
 }) {
   const { state, filter } = await params;
   const stateCode = state.toUpperCase();
-  const stateName = STATE_NAMES[stateCode];
 
   // Validate state and filter
-  if (!stateName || !isValidFilterType(filter)) {
+  if (!isValidStateCode(stateCode) || !isValidFilterType(filter)) {
     notFound();
   }
+
+  const stateName = getStateName(stateCode);
 
   const springType = getSpringTypeFromFilter(filter as FilterType);
 
