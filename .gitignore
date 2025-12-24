@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -46,3 +48,6 @@ tmp/*
 
 # Data pipeline cache
 scripts/data/cache/
+
+# SEO research data (large JSON files)
+/data/
