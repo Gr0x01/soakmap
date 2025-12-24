@@ -3,7 +3,7 @@ import { Header, Footer } from '@/components/layout';
 import { SearchHero, FeaturedSprings } from '@/components/home';
 import { safeJsonLd, generateWebSiteSchema, generateOrganizationSchema } from '@/lib/schema';
 
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 86400; // Revalidate every 24 hours
 
 export const metadata: Metadata = {
   title: 'SoakMap - Find Hot Springs & Swimming Holes Near You',

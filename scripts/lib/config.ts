@@ -11,6 +11,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1).optional(),
   TAVILY_API_KEY: z.string().min(1).optional(),
+  DATAFORSEO_LOGIN: z.string().min(1).optional(),
+  DATAFORSEO_PASSWORD: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -33,6 +35,10 @@ export const config = {
   tavily: {
     apiKey: parsed.data.TAVILY_API_KEY,
   },
+  dataforseo: {
+    login: parsed.data.DATAFORSEO_LOGIN,
+    password: parsed.data.DATAFORSEO_PASSWORD,
+  },
   // Rate limiting
   rateLimit: {
     swimmingholes: 500, // ms between requests
@@ -40,6 +46,7 @@ export const config = {
     soakoregon: 500, // ms between page requests
     tavily: 200,
     openai: 100,
+    dataforseo: 500, // ms between API calls
   },
   // Batch sizes
   batch: {
